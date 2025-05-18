@@ -28,10 +28,82 @@ exports.getForms = asyncHandler(async (req, res, next) => {
     }
   });
 
+  // Get form IDs
+  const formIds = forms.map(f => f.id);
+
+  // Get response counts for each form
+  const responsesCounts = await prisma.response.groupBy({
+    by: ['formId'],
+    where: { formId: { in: formIds } },
+    _count: true
+  });
+
+  // Get today's date range
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  const endOfToday = new Date();
+  endOfToday.setHours(23, 59, 59, 999);
+
+  // Get today's response counts for each form
+  const responsesTodayCounts = await prisma.response.groupBy({
+    by: ['formId'],
+    where: {
+      formId: { in: formIds },
+      createdAt: {
+        gte: startOfToday,
+        lte: endOfToday
+      }
+    },
+    _count: true
+  });
+
+  // Map counts for quick lookup
+  const responsesMap = Object.fromEntries(
+    responsesCounts.map(rc => [rc.formId, rc._count])
+  );
+  const responsesTodayMap = Object.fromEntries(
+    responsesTodayCounts.map(rc => [rc.formId, rc._count])
+  );
+
+  // Get lastUpdated for each form (latest response)
+  const lastResponses = await prisma.response.findMany({
+    where: { formId: { in: formIds } },
+    orderBy: [{ createdAt: 'desc' }],
+    select: { formId: true, createdAt: true }
+  });
+
+  // Helper to format "x days ago"
+  function timeAgo(date) {
+    if (!date) return null;
+    const now = new Date();
+    const diffMs = now - new Date(date);
+    const diffSec = Math.floor(diffMs / 1000);
+    if (diffSec < 60) return 'just now';
+    const diffMin = Math.floor(diffSec / 60);
+    if (diffMin < 60) return `${diffMin} minute${diffMin > 1 ? 's' : ''} ago`;
+    const diffHr = Math.floor(diffMin / 60);
+    if (diffHr < 24) return `${diffHr} hour${diffHr > 1 ? 's' : ''} ago`;
+    const diffDay = Math.floor(diffHr / 24);
+    return `${diffDay} day${diffDay > 1 ? 's' : ''} ago`;
+  }
+
+  // Map lastUpdated for each form
+  const lastUpdatedMap = {};
+  for (const resp of lastResponses) {
+    if (!lastUpdatedMap[resp.formId]) {
+      lastUpdatedMap[resp.formId] = timeAgo(resp.createdAt);
+    }
+  }
+
   res.status(200).json({
     success: true,
     count: forms.length,
-    data: forms
+    data: forms.map(form => ({
+    ...form,
+    lastUpdated: lastUpdatedMap[form.id] || null,
+    responses: responsesMap[form.id] || 0,
+    responsesToday: responsesTodayMap[form.id] || 0
+  }))
   });
 });
 
