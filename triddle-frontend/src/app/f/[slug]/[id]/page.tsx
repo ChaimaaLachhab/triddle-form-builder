@@ -70,7 +70,7 @@ export default function PublicFormPage() {
       <div className="max-w-md mx-auto mt-20 p-6 bg-white rounded-lg shadow">
         <h2 className="text-2xl font-bold mb-4 text-center">Form Not Found</h2>
         <p className="text-gray-600 text-center">
-          The form you're looking for doesn't exist or has been removed.
+          The form you&apos;re looking for doesn&apos;t exist or has been removed.
         </p>
       </div>
     );

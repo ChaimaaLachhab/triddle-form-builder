@@ -213,7 +213,7 @@ export default function Index() {
               className="flex-grow bg-white/10 border-white/20 text-white placeholder:text-white/60"
             />
             <Button type="submit" variant="secondary" className="whitespace-nowrap">
-              Let's Do IT!
+              Let&apos;s Do IT!
             </Button>
           </form>
         </div>

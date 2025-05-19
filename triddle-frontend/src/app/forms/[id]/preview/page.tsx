@@ -37,7 +37,7 @@ export default function FormPreviewPage() {
         <div className="p-8">
           <div className="max-w-md mx-auto text-center">
             <h2 className="text-2xl font-bold mb-4">Form Not Found</h2>
-            <p className="text-gray-600 mb-6">We couldn't find the form you're looking for.</p>
+            <p className="text-gray-600 mb-6">We couldn&apos;t find the form you&apos;re looking for.</p>
             <Link href="/dashboard">
               <Button>Back to Dashboard</Button>
             </Link>

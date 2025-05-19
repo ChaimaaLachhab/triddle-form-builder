@@ -136,7 +136,7 @@ export default function Home() {
 
           <div className="mt-20 flex justify-center">
             <img 
-              src="/placeholder.svg" 
+              src="https://duonut.com/_next/image?url=%2Fimages%2Fblogs%2Fform-builder.png&w=3840&q=75" 
               alt="Form Builder Interface" 
               className="rounded-lg shadow-lg max-w-4xl w-full"
             />
