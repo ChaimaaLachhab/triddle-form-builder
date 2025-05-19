@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import axios from "axios"
 import { User, LoginCredentials, RegisterData, AuthResponse } from "@/types/api-types"
 import { AUTH_ENDPOINTS } from "@/lib/api-config"
 
@@ -33,6 +34,23 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 const TOKEN_STORAGE_KEY = "triddle_auth_token";
+
+// Create axios instance for auth
+const authApi = axios.create({
+  headers: {
+    "Content-Type": "application/json",
+  }
+});
+
+// Add response interceptor to handle errors
+authApi.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // Custom error handling
+    const message = error.response?.data?.message || error.message || "An error occurred";
+    return Promise.reject(new Error(message));
+  }
+);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({
@@ -77,22 +95,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuthState({ isLoading: true, error: null })
     
     try {
-      const response = await fetch(AUTH_ENDPOINTS.login, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(credentials),
-      })
+      const response = await authApi.post(AUTH_ENDPOINTS.login, credentials);
+      const data: AuthResponse = response.data;
       
-      const data: AuthResponse = await response.json()
-      
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || "Login failed")
+      if (!data.success) {
+        throw new Error(data.message || "Login failed");
       }
       
       if (data.token && data.user) {
-        localStorage.setItem(TOKEN_STORAGE_KEY, data.token)
+        localStorage.setItem(TOKEN_STORAGE_KEY, data.token);
         
         setAuthState({
           user: data.user,
@@ -100,59 +111,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           isAuthenticated: true,
           isLoading: false,
           showAuthModal: false, // Close modal on successful login
-        })
+        });
         
-        toast.success("Successfully logged in")
-        return true
+        toast.success("Successfully logged in");
+        return true;
       } else {
-        throw new Error("Invalid response from server")
+        throw new Error("Invalid response from server");
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Login failed"
+      const message = error instanceof Error ? error.message : "Login failed";
       setAuthState({
         user: null,
         token: null,
         isAuthenticated: false,
         isLoading: false,
         error: message,
-      })
+      });
       
-      toast.error(message)
-      return false
+      toast.error(message);
+      return false;
     }
   }
 
   // Register function
   const signup = async (data: RegisterData): Promise<boolean> => {
-    setAuthState({ isLoading: true, error: null })
+    setAuthState({ isLoading: true, error: null });
     
     try {
-      const response = await fetch(AUTH_ENDPOINTS.signup, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      })
+      const response = await authApi.post(AUTH_ENDPOINTS.signup, data);
+      const responseData: AuthResponse = response.data;
       
-      const responseData: AuthResponse = await response.json()
-      
-      if (!response.ok || !responseData.success) {
-        throw new Error(responseData.message || "Registration failed")
+      if (!responseData.success) {
+        throw new Error(responseData.message || "Registration failed");
       }
       
-      toast.success("Account created successfully")
-      router.push("/login")
-      return true
+      toast.success("Account created successfully");
+      router.push("/login");
+      return true;
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Registration failed"
+      const message = error instanceof Error ? error.message : "Registration failed";
       setAuthState({
         isLoading: false,
         error: message,
-      })
+      });
       
-      toast.error(message)
-      return false
+      toast.error(message);
+      return false;
     }
   }
 
@@ -160,18 +164,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async (): Promise<void> => {
     try {
       if (state.token) {
-        await fetch(AUTH_ENDPOINTS.logout, {
-          method: "GET",
+        await authApi.get(AUTH_ENDPOINTS.logout, {
           headers: {
             Authorization: `Bearer ${state.token}`,
           },
-        })
+        });
       }
     } catch (error) {
-      console.error("Logout API error:", error)
+      console.error("Logout API error:", error);
     } finally {
       // Clear local storage and state regardless of API success
-      localStorage.removeItem(TOKEN_STORAGE_KEY)
+      localStorage.removeItem(TOKEN_STORAGE_KEY);
       
       setAuthState({
         user: null,
@@ -179,22 +182,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: false,
         isLoading: false,
         error: null,
-      })
+      });
       
-      router.push("/login")
-      toast.success("You have been logged out")
+      router.push("/login");
+      toast.success("You have been logged out");
     }
   }
 
   // Check auth state
   const checkAuth = async (): Promise<boolean> => {
-    setAuthState({ isLoading: true })
+    setAuthState({ isLoading: true });
     
     if (typeof window === 'undefined') {
-      return false // Server-side rendering, no authentication
+      return false; // Server-side rendering, no authentication
     }
     
-    const token = localStorage.getItem(TOKEN_STORAGE_KEY)
+    const token = localStorage.getItem(TOKEN_STORAGE_KEY);
     
     if (!token) {
       setAuthState({
@@ -203,23 +206,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: false,
         isLoading: false,
         error: null,
-      })
-      return false
+      });
+      return false;
     }
     
     try {
-      const response = await fetch(AUTH_ENDPOINTS.me, {
-        method: "GET",
+      const response = await authApi.get(AUTH_ENDPOINTS.me, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      })
+      });
       
-      if (!response.ok) {
-        throw new Error("Session expired")
-      }
-      
-      const data = await response.json()
+      const data = response.data;
       
       if (data.success && data.user) {
         setAuthState({
@@ -228,13 +226,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           isAuthenticated: true,
           isLoading: false,
           error: null,
-        })
-        return true
+        });
+        return true;
       } else {
-        throw new Error("Failed to authenticate user")
+        throw new Error("Failed to authenticate user");
       }
     } catch (error) {
-      localStorage.removeItem(TOKEN_STORAGE_KEY)
+      localStorage.removeItem(TOKEN_STORAGE_KEY);
       
       setAuthState({
         user: null,
@@ -242,9 +240,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: false,
         isLoading: false,
         error: "Session expired. Please login again.",
-      })
+      });
       
-      return false
+      return false;
     }
   }
 

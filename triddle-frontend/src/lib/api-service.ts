@@ -1,6 +1,7 @@
 "use client";
 
 import { toast } from "sonner";
+import axios from "axios";
 import { Form, Response, User } from "@/types/api-types";
 import { 
   AUTH_ENDPOINTS, 
@@ -39,74 +40,54 @@ export const authService = {
   }
 };
 
-// Helper function to get headers with auth token
-const getAuthHeaders = (): HeadersInit => {
-  if (typeof window === 'undefined') {
-    return { "Content-Type": "application/json" };
+// Create axios instance with default configuration
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
   }
-  
-  const token = localStorage.getItem(TOKEN_STORAGE_KEY);
-  return {
-    "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-};
+});
 
-// Define options interface for apiFetch
-interface ApiFetchOptions extends RequestInit {
-  responseType?: 'json' | 'blob';
-}
+// Add request interceptor to add auth token
+api.interceptors.request.use((config) => {
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem(TOKEN_STORAGE_KEY);
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  }
+  return config;
+});
 
-// Custom fetch wrapper to handle auth errors consistently
-const apiFetch = async (url: string, options: ApiFetchOptions = {}): Promise<any> => {
-  try {
-    const response = await fetch(url, {
-      ...options,
-      headers: options.headers || getAuthHeaders(),
-    });
-    
-    // Handle authentication errors
-    if (response.status === 401) {
+// Add response interceptor to handle errors
+api.interceptors.response.use(
+  (response) => response, 
+  (error) => {
+    // Handle auth errors
+    if (error.response && error.response.status === 401) {
       authService.handleAuthError();
-      throw {
-        status: 401,
-        message: "Authentication required",
-        isAuthError: true
-      } as ApiError;
-    }
-    
-    if (!response.ok) {
-      throw {
-        status: response.status,
-        message: `Request failed with status ${response.status}`,
-        isAuthError: response.status === 401
-      } as ApiError;
-    }
-    
-    // For non-JSON responses (like blobs)
-    if (options.responseType === 'blob') {
-      return await response.blob();
-    }
-    
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    // Enhance error with auth info if needed
-    const apiError = error as ApiError;
-    if (apiError.status === 401) {
+      const apiError = new Error("Authentication required") as ApiError;
+      apiError.status = 401;
       apiError.isAuthError = true;
+      return Promise.reject(apiError);
     }
-    throw apiError;
+    
+    // Handle other errors
+    const apiError = new Error(error.message || "Request failed") as ApiError;
+    apiError.status = error.response?.status;
+    apiError.isAuthError = error.response?.status === 401;
+    
+    return Promise.reject(apiError);
   }
-};
+);
 
 // Form API functions
 export const formService = {
   // Get all forms
   getAllForms: async (): Promise<Form[]> => {
     try {
-      const data = await apiFetch(FORM_ENDPOINTS.forms);
-      return data.data;
+      const response = await api.get(FORM_ENDPOINTS.forms);
+      return response.data.data;
     } catch (error) {
       const apiError = error as ApiError;
       const message = apiError.message || "Failed to fetch forms";
@@ -120,8 +101,8 @@ export const formService = {
   // Get form by ID
   getFormById: async (id: string): Promise<Form> => {
     try {
-      const data = await apiFetch(FORM_ENDPOINTS.form(id));
-      return data.data;
+      const response = await api.get(FORM_ENDPOINTS.form(id));
+      return response.data.data;
     } catch (error) {
       const apiError = error as ApiError;
       const message = apiError.message || "Failed to fetch form";
@@ -158,12 +139,8 @@ export const formService = {
         }
       };
       
-      const data = await apiFetch(FORM_ENDPOINTS.forms, {
-        method: "POST",
-        body: JSON.stringify(completeFormData),
-      });
-      
-      return data.data;
+      const response = await api.post(FORM_ENDPOINTS.forms, completeFormData);
+      return response.data.data;
     } catch (error) {
       const apiError = error as ApiError;
       const message = apiError.message || "Failed to create form";
@@ -177,12 +154,8 @@ export const formService = {
   // Update form
   updateForm: async (id: string, formData: Partial<Form>): Promise<Form> => {
     try {
-      const data = await apiFetch(FORM_ENDPOINTS.form(id), {
-        method: "PUT",
-        body: JSON.stringify(formData),
-      });
-      
-      return data.data;
+      const response = await api.put(FORM_ENDPOINTS.form(id), formData);
+      return response.data.data;
     } catch (error) {
       const apiError = error as ApiError;
       const message = apiError.message || "Failed to update form";
@@ -196,9 +169,7 @@ export const formService = {
   // Delete form
   deleteForm: async (id: string): Promise<void> => {
     try {
-      await apiFetch(FORM_ENDPOINTS.form(id), {
-        method: "DELETE",
-      });
+      await api.delete(FORM_ENDPOINTS.form(id));
     } catch (error) {
       const apiError = error as ApiError;
       const message = apiError.message || "Failed to delete form";
@@ -212,11 +183,8 @@ export const formService = {
   // Publish form
   publishForm: async (id: string): Promise<Form> => {
     try {
-      const data = await apiFetch(FORM_ENDPOINTS.publish(id), {
-        method: "PUT",
-      });
-      
-      return data.data;
+      const response = await api.put(FORM_ENDPOINTS.publish(id));
+      return response.data.data;
     } catch (error) {
       const apiError = error as ApiError;
       const message = apiError.message || "Failed to publish form";
@@ -230,11 +198,8 @@ export const formService = {
   // Archive form
   archiveForm: async (id: string): Promise<Form> => {
     try {
-      const data = await apiFetch(FORM_ENDPOINTS.archive(id), {
-        method: "PUT",
-      });
-      
-      return data.data;
+      const response = await api.put(FORM_ENDPOINTS.archive(id));
+      return response.data.data;
     } catch (error) {
       const apiError = error as ApiError;
       const message = apiError.message || "Failed to archive form";
@@ -251,32 +216,17 @@ export const formService = {
       const formData = new FormData();
       formData.append('file', file);
       
-      const response = await fetch(FORM_ENDPOINTS.upload(id), {
-        method: "POST",
+      // For file uploads, we need to set the content type to multipart/form-data
+      const response = await axios.post(FORM_ENDPOINTS.upload(id), formData, {
         headers: {
-          // Don't set Content-Type as it will be set automatically with boundary for FormData
+          // Don't set Content-Type as axios will set it automatically with boundary for FormData
           ...(authService.isAuthenticated() ? { 
             Authorization: `Bearer ${authService.getToken()}` 
           } : {})
-        },
-        body: formData,
+        }
       });
       
-      if (response.status === 401) {
-        authService.handleAuthError();
-        throw {
-          status: 401,
-          message: "Authentication required",
-          isAuthError: true
-        } as ApiError;
-      }
-      
-      if (!response.ok) {
-        throw new Error("Failed to upload file");
-      }
-      
-      const data = await response.json();
-      return data.data;
+      return response.data.data;
     } catch (error) {
       const apiError = error as ApiError;
       const message = apiError.message || "Failed to upload file";
@@ -293,8 +243,8 @@ export const responseService = {
   // Get responses for a form
   getFormResponses: async (formId: string): Promise<Response[]> => {
     try {
-      const data = await apiFetch(RESPONSE_ENDPOINTS.formResponses(formId));
-      return data.data;
+      const response = await api.get(RESPONSE_ENDPOINTS.formResponses(formId));
+      return response.data.data;
     } catch (error) {
       const apiError = error as ApiError;
       const message = apiError.message || "Failed to fetch responses";
@@ -308,8 +258,8 @@ export const responseService = {
   // Get specific response
   getResponseById: async (id: string): Promise<Response> => {
     try {
-      const data = await apiFetch(RESPONSE_ENDPOINTS.response(id));
-      return data.data;
+      const response = await api.get(RESPONSE_ENDPOINTS.response(id));
+      return response.data.data;
     } catch (error) {
       const apiError = error as ApiError;
       const message = apiError.message || "Failed to fetch response";
@@ -323,9 +273,7 @@ export const responseService = {
   // Delete response
   deleteResponse: async (id: string): Promise<void> => {
     try {
-      await apiFetch(RESPONSE_ENDPOINTS.response(id), {
-        method: "DELETE",
-      });
+      await api.delete(RESPONSE_ENDPOINTS.response(id));
     } catch (error) {
       const apiError = error as ApiError;
       const message = apiError.message || "Failed to delete response";
@@ -355,45 +303,20 @@ export const responseService = {
           formData.append(`file`, file);
         });
         
-        response = await fetch(RESPONSE_ENDPOINTS.formResponses(formId), {
-          method: "POST",
+        response = await axios.post(RESPONSE_ENDPOINTS.formResponses(formId), formData, {
           headers: {
-            // Don't set Content-Type as it will be set automatically with boundary
+            // Don't set Content-Type as axios will set it automatically with boundary
             ...(authService.isAuthenticated() ? { 
               Authorization: `Bearer ${authService.getToken()}` 
             } : {})
-          },
-          body: formData,
+          }
         });
       } else {
         // If no files, use JSON
-        response = await fetch(RESPONSE_ENDPOINTS.formResponses(formId), {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(authService.isAuthenticated() ? { 
-              Authorization: `Bearer ${authService.getToken()}` 
-            } : {})
-          },
-          body: JSON.stringify(responseData),
-        });
+        response = await api.post(RESPONSE_ENDPOINTS.formResponses(formId), responseData);
       }
       
-      if (response.status === 401) {
-        authService.handleAuthError();
-        throw {
-          status: 401,
-          message: "Authentication required",
-          isAuthError: true
-        } as ApiError;
-      }
-      
-      if (!response.ok) {
-        throw new Error(`Failed to submit form response: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      return data.data;
+      return response.data.data;
     } catch (error) {
       const apiError = error as ApiError;
       if (!apiError.isAuthError) {
@@ -410,8 +333,8 @@ export const analyticsService = {
   // Get form analytics
   getFormAnalytics: async (formId: string) => {
     try {
-      const data = await apiFetch(ANALYTICS_ENDPOINTS.formAnalytics(formId));
-      return data.data;
+      const response = await api.get(ANALYTICS_ENDPOINTS.formAnalytics(formId));
+      return response.data.data;
     } catch (error) {
       const apiError = error as ApiError;
       const message = apiError.message || "Failed to fetch analytics";
@@ -425,8 +348,8 @@ export const analyticsService = {
   // Get field analytics
   getFieldAnalytics: async (formId: string) => {
     try {
-      const data = await apiFetch(ANALYTICS_ENDPOINTS.fieldAnalytics(formId));
-      return data.data;
+      const response = await api.get(ANALYTICS_ENDPOINTS.fieldAnalytics(formId));
+      return response.data.data;
     } catch (error) {
       const apiError = error as ApiError;
       const message = apiError.message || "Failed to fetch field analytics";
@@ -440,8 +363,8 @@ export const analyticsService = {
   // Get visit analytics
   getVisitAnalytics: async (formId: string) => {
     try {
-      const data = await apiFetch(ANALYTICS_ENDPOINTS.visitAnalytics(formId));
-      return data.data;
+      const response = await api.get(ANALYTICS_ENDPOINTS.visitAnalytics(formId));
+      return response.data.data;
     } catch (error) {
       const apiError = error as ApiError;
       const message = apiError.message || "Failed to fetch visit analytics";
@@ -459,10 +382,11 @@ export const analyticsService = {
       
       // Handle blob responses differently
       if (format === 'csv') {
-        return await apiFetch(url, { responseType: 'blob' });
+        const response = await api.get(url, { responseType: 'blob' });
+        return response.data;
       } else {
-        const data = await apiFetch(url);
-        return data;
+        const response = await api.get(url);
+        return response.data;
       }
     } catch (error) {
       const apiError = error as ApiError;
@@ -480,8 +404,8 @@ export const userService = {
   // Get all users (admin only)
   getAllUsers: async (): Promise<User[]> => {
     try {
-      const data = await apiFetch(`${API_BASE_URL}/api/v1/users`);
-      return data.data;
+      const response = await api.get(`/api/v1/users`);
+      return response.data.data;
     } catch (error) {
       const apiError = error as ApiError;
       const message = apiError.message || "Failed to fetch users";
@@ -495,8 +419,8 @@ export const userService = {
   // Get user by ID (admin only)
   getUserById: async (id: string): Promise<User> => {
     try {
-      const data = await apiFetch(`${API_BASE_URL}/api/v1/users/${id}`);
-      return data.data;
+      const response = await api.get(`/api/v1/users/${id}`);
+      return response.data.data;
     } catch (error) {
       const apiError = error as ApiError;
       const message = apiError.message || "Failed to fetch user";
@@ -515,12 +439,8 @@ export const userService = {
     role?: 'USER' | 'ADMIN';
   }): Promise<User> => {
     try {
-      const data = await apiFetch(`${API_BASE_URL}/api/v1/users`, {
-        method: "POST",
-        body: JSON.stringify(userData),
-      });
-      
-      return data.data;
+      const response = await api.post(`/api/v1/users`, userData);
+      return response.data.data;
     } catch (error) {
       const apiError = error as ApiError;
       const message = apiError.message || "Failed to create user";
@@ -539,12 +459,8 @@ export const userService = {
     role?: 'USER' | 'ADMIN';
   }): Promise<User> => {
     try {
-      const data = await apiFetch(`${API_BASE_URL}/api/v1/users/${id}`, {
-        method: "PUT",
-        body: JSON.stringify(userData),
-      });
-      
-      return data.data;
+      const response = await api.put(`/api/v1/users/${id}`, userData);
+      return response.data.data;
     } catch (error) {
       const apiError = error as ApiError;
       const message = apiError.message || "Failed to update user";
@@ -558,9 +474,7 @@ export const userService = {
   // Delete user (admin only)
   deleteUser: async (id: string): Promise<void> => {
     try {
-      await apiFetch(`${API_BASE_URL}/api/v1/users/${id}`, {
-        method: "DELETE",
-      });
+      await api.delete(`/api/v1/users/${id}`);
     } catch (error) {
       const apiError = error as ApiError;
       const message = apiError.message || "Failed to delete user";
