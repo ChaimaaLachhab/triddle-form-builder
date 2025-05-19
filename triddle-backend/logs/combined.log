@@ -616,3 +616,5 @@
 {"level":"error","message":"Invalid credentials","service":"triddle-api","stack":"Error: Invalid credentials\n    at C:\\Users\\PCPACK\\Videos\\STAGE\\triddle-form-builder\\triddle-backend\\src\\controllers\\auth.controller.js:69:17","statusCode":401,"timestamp":"2025-05-19 11:10:04"}
 {"level":"info","message":"Server running in development mode on port 5000","service":"triddle-api","timestamp":"2025-05-19 12:38:53"}
 {"level":"info","message":"PostgreSQL Connected","service":"triddle-api","timestamp":"2025-05-19 12:38:53"}
+{"level":"info","message":"Server running in development mode on port 5000","service":"triddle-api","timestamp":"2025-05-19 12:48:22"}
+{"level":"info","message":"PostgreSQL Connected","service":"triddle-api","timestamp":"2025-05-19 12:48:22"}
