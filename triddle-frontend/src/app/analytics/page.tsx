@@ -55,9 +55,9 @@ export default function AnalyticsPage() {
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <ResponsesChart data={mockChartData} />
-            <div className="grid grid-cols-1 gap-6">
+            <DeviceChart data={mockDeviceData} />
+            <div className="col-span-1 lg:col-span-2">
               <TopFormsTable forms={mockTopForms} />
-              <DeviceChart data={mockDeviceData} />
             </div>
           </div>
         </div>

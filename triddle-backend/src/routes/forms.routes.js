@@ -5,7 +5,7 @@
  *   description: Form management
  */
 
-const express = require('express');
+const express = require("express");
 const {
   getForms,
   getForm,
@@ -14,23 +14,48 @@ const {
   deleteForm,
   publishForm,
   archiveForm,
-  uploadFile
-} = require('../controllers/forms.controller');
+  uploadFile,
+} = require("../controllers/forms.controller");
 
-const { 
-  getFormAnalytics, 
-  getFieldAnalytics, 
+const {
+  getFormAnalytics,
+  getFieldAnalytics,
   getVisitAnalytics,
-  exportResponses
-} = require('../controllers/analytics.controller');
+  exportResponses,
+} = require("../controllers/analytics.controller");
 
-const { getResponses, createResponse } = require('../controllers/responses.controller');
+const {
+  getResponses,
+  createResponse,
+} = require("../controllers/responses.controller");
 
 const router = express.Router();
 
-const { protect, authorize } = require('../middleware/auth');
+const { protect, authorize } = require("../middleware/auth");
 
-// Apply authentication middleware to all routes except public form access
+
+/**
+ * @swagger
+ * /forms/{id}:
+ *   get:
+ *     summary: Get a single form (public endpoint)
+ *     tags: [Forms]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Form ID
+ *     responses:
+ *       200:
+ *         description: Form data
+ *       404:
+ *         description: Form not found
+ */
+router.get("/:id", getForm);
+
+// Apply authentication middleware to all other routes
 router.use(protect);
 
 /**
@@ -54,7 +79,8 @@ router.use(protect);
  *       401:
  *         description: Not authorized
  */
-router.route('/')
+router
+  .route("/")
   .get(getForms)
   /**
    * @swagger
@@ -183,8 +209,8 @@ router.route('/')
 /**
  * @swagger
  * /forms/{id}:
- *   get:
- *     summary: Get a single form
+ *   put:
+ *     summary: Update a form
  *     tags: [Forms]
  *     security:
  *       - bearerAuth: []
@@ -195,9 +221,28 @@ router.route('/')
  *           type: string
  *         required: true
  *         description: Form ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               fields:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *               settings:
+ *                 type: object
  *     responses:
  *       200:
- *         description: Form data
+ *         description: Form updated
+ *       400:
+ *         description: Invalid input
  *       401:
  *         description: Not authorized
  *       403:
@@ -205,79 +250,7 @@ router.route('/')
  *       404:
  *         description: Form not found
  */
-router.route('/:id')
-  .get(getForm)
-  /**
-   * @swagger
-   * /forms/{id}:
-   *   put:
-   *     summary: Update a form
-   *     tags: [Forms]
-   *     security:
-   *       - bearerAuth: []
-   *     parameters:
-   *       - in: path
-   *         name: id
-   *         schema:
-   *           type: string
-   *         required: true
-   *         description: Form ID
-   *     requestBody:
-   *       required: true
-   *       content:
-   *         application/json:
-   *           schema:
-   *             type: object
-   *             properties:
-   *               title:
-   *                 type: string
-   *               description:
-   *                 type: string
-   *               fields:
-   *                 type: array
-   *                 items:
-   *                   type: object
-   *               settings:
-   *                 type: object
-   *     responses:
-   *       200:
-   *         description: Form updated
-   *       400:
-   *         description: Invalid input
-   *       401:
-   *         description: Not authorized
-   *       403:
-   *         description: Forbidden
-   *       404:
-   *         description: Form not found
-   */
-  .put(updateForm)
-  /**
-   * @swagger
-   * /forms/{id}:
-   *   delete:
-   *     summary: Delete a form
-   *     tags: [Forms]
-   *     security:
-   *       - bearerAuth: []
-   *     parameters:
-   *       - in: path
-   *         name: id
-   *         schema:
-   *           type: string
-   *         required: true
-   *         description: Form ID
-   *     responses:
-   *       200:
-   *         description: Form deleted
-   *       401:
-   *         description: Not authorized
-   *       403:
-   *         description: Forbidden
-   *       404:
-   *         description: Form not found
-   */
-  .delete(deleteForm);
+router.route("/:id").put(updateForm).delete(deleteForm);
 
 /**
  * @swagger
@@ -304,8 +277,7 @@ router.route('/:id')
  *       404:
  *         description: Form not found
  */
-router.route('/:id/publish')
-  .put(publishForm);
+router.route("/:id/publish").put(publishForm);
 
 /**
  * @swagger
@@ -332,8 +304,7 @@ router.route('/:id/publish')
  *       404:
  *         description: Form not found
  */
-router.route('/:id/archive')
-  .put(archiveForm);
+router.route("/:id/archive").put(archiveForm);
 
 /**
  * @swagger
@@ -369,8 +340,7 @@ router.route('/:id/archive')
  *       404:
  *         description: Form not found
  */
-router.route('/:id/upload')
-  .post(uploadFile);
+router.route("/:id/upload").post(uploadFile);
 
 /**
  * @swagger
@@ -397,8 +367,7 @@ router.route('/:id/upload')
  *       404:
  *         description: Form not found
  */
-router.route('/:formId/analytics')
-  .get(getFormAnalytics);
+router.route("/:formId/analytics").get(getFormAnalytics);
 
 /**
  * @swagger
@@ -425,8 +394,7 @@ router.route('/:formId/analytics')
  *       404:
  *         description: Form not found
  */
-router.route('/:formId/analytics/fields')
-  .get(getFieldAnalytics);
+router.route("/:formId/analytics/fields").get(getFieldAnalytics);
 
 /**
  * @swagger
@@ -453,8 +421,7 @@ router.route('/:formId/analytics/fields')
  *       404:
  *         description: Form not found
  */
-router.route('/:formId/analytics/visits')
-  .get(getVisitAnalytics);
+router.route("/:formId/analytics/visits").get(getVisitAnalytics);
 
 /**
  * @swagger
@@ -494,8 +461,7 @@ router.route('/:formId/analytics/visits')
  *       404:
  *         description: Form not found
  */
-router.route('/:formId/export')
-  .get(exportResponses);
+router.route("/:formId/export").get(exportResponses);
 
 /**
  * @swagger
@@ -522,59 +488,59 @@ router.route('/:formId/export')
  *       404:
  *         description: Form not found
  */
-router.route('/:formId/responses')
-  .get(getResponses)
-  /**
-   * @swagger
-   * /forms/{formId}/responses:
-   *   post:
-   *     summary: Submit a form response
-   *     tags: [Forms]
-   *     parameters:
-   *       - in: path
-   *         name: formId
-   *         schema:
-   *           type: string
-   *         required: true
-   *         description: Form ID
-   *     requestBody:
-   *       required: true
-   *       content:
-   *         application/json:
-   *           schema:
-   *             type: object
-   *             properties:
-   *               answers:
-   *                 type: array
-   *                 items:
-   *                   type: object
-   *               visitId:
-   *                 type: string
-   *               isComplete:
-   *                 type: boolean
-   *         multipart/form-data:
-   *           schema:
-   *             type: object
-   *             properties:
-   *               answers:
-   *                 type: string
-   *               visitId:
-   *                 type: string
-   *               isComplete:
-   *                 type: boolean
-   *               file:
-   *                 type: string
-   *                 format: binary
-   *     responses:
-   *       201:
-   *         description: Response submitted
-   *       400:
-   *         description: Invalid input
-   *       403:
-   *         description: Form not accepting responses
-   *       404:
-   *         description: Form not found
-   */
-  .post(createResponse);
+router.route("/:formId/responses").get(getResponses);
+
+/**
+ * @swagger
+ * /forms/{formId}/responses:
+ *   post:
+ *     summary: Submit a form response (public endpoint)
+ *     tags: [Forms]
+ *     parameters:
+ *       - in: path
+ *         name: formId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Form ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               answers:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *               visitId:
+ *                 type: string
+ *               isComplete:
+ *                 type: boolean
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               answers:
+ *                 type: string
+ *               visitId:
+ *                 type: string
+ *               isComplete:
+ *                 type: boolean
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       201:
+ *         description: Response submitted
+ *       400:
+ *         description: Invalid input
+ *       403:
+ *         description: Form not accepting responses
+ *       404:
+ *         description: Form not found
+ */
+router.post("/:formId/responses", createResponse);
 
 module.exports = router;

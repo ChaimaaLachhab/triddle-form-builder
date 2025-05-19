@@ -16,7 +16,7 @@ export default function Logo({ size = "medium", href = "/" }: LogoProps) {
     const content = (
         <div className="flex items-center space-x-2">
             <FileText className={`text-primary ${size === "small" ? "w-5 h-5" : size === "medium" ? "w-6 h-6" : "w-8 h-8"}`} />
-            <span className={`font-bold ${sizeClasses[size]}`}>Form Builder</span>
+            <span className={`font-bold ${sizeClasses[size]}`}>Triddle</span>
         </div>
     );
 

@@ -12,6 +12,7 @@ type AuthState = {
   isLoading: boolean;
   isAuthenticated: boolean;
   error: string | null;
+  showAuthModal: boolean; // Added for auth modal control
 }
 
 type AuthContextType = {
@@ -20,10 +21,13 @@ type AuthContextType = {
   isLoading: boolean;
   isAuthenticated: boolean;
   error: string | null;
+  showAuthModal: boolean; // Added for auth modal control
   login: (credentials: LoginCredentials) => Promise<boolean>;
   signup: (data: RegisterData) => Promise<boolean>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<boolean>;
+  openAuthModal: () => void; // New function to open auth modal
+  closeAuthModal: () => void; // New function to close auth modal
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -37,12 +41,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading: true,
     isAuthenticated: false,
     error: null,
+    showAuthModal: false, // Initialize modal as hidden
   })
 
   const router = useRouter()
 
   const setAuthState = (data: Partial<AuthState>) => {
     setState((prev) => ({ ...prev, ...data }))
+  }
+
+  // Function to open auth modal
+  const openAuthModal = () => {
+    setAuthState({ showAuthModal: true });
+  }
+
+  // Function to close auth modal
+  const closeAuthModal = () => {
+    setAuthState({ showAuthModal: false });
   }
 
   // Check if user is logged in on initial load
@@ -84,6 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           token: data.token,
           isAuthenticated: true,
           isLoading: false,
+          showAuthModal: false, // Close modal on successful login
         })
         
         toast.success("Successfully logged in")
@@ -238,6 +254,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signup,
     logout,
     checkAuth,
+    openAuthModal,
+    closeAuthModal,
   }
 
   return (

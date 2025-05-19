@@ -2,20 +2,69 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowRight, Search, ChevronLeft, ChevronRight } from "lucide-react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { ArrowRight, CircleDot, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Form } from "@/types/api-types";
+import { formatDistanceToNow } from "date-fns";
 
-interface FormsListProps {
+interface FormCardItemProps {
+  form: Form;
+}
+
+function FormCardItem({ form }: FormCardItemProps) {
+  return (
+    <Card className="overflow-hidden transition-shadow hover:shadow-md">
+      <CardHeader className="bg-gray-50 pb-3">
+        <CardTitle className="text-base truncate">{form.title}</CardTitle>
+      </CardHeader>
+      <CardContent className="pt-4">
+        <div className="flex items-center mb-2">
+          <CircleDot className="w-4 h-4 text-green-500 mr-2" />
+          <div className="text-sm">
+            <span className="font-medium">{form.responses} responses</span>
+            <span className="mx-2 text-gray-400">•</span>
+            <span className="text-gray-600">{form.responsesToday} today</span>
+          </div>
+        </div>
+        <div className="text-sm text-gray-500">
+          You edited{" "}
+          {form.updatedAt
+            ? formatDistanceToNow(new Date(form.updatedAt), { addSuffix: true })
+            : "a while ago"}
+          .
+        </div>
+      </CardContent>
+      <CardFooter className="pt-0">
+        <Link href={`/forms/${form.id}`} className="w-full">
+          <Button
+            variant="outline"
+            className="w-full text-primary justify-between"
+          >
+            View More
+            <ArrowRight size={16} />
+          </Button>
+        </Link>
+      </CardFooter>
+    </Card>
+  );
+}
+
+interface FormsCardProps {
   forms: Form[];
 }
 
-export function FormsList({ forms }: FormsListProps) {
+export function FormsCard({ forms }: FormsCardProps) {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [currentPage, setCurrentPage] = React.useState(1);
-  const itemsPerPage = 5;
+  const itemsPerPage = 6;
   
   const filteredForms = React.useMemo(() => {
     if (!searchQuery) return forms;
@@ -54,52 +103,19 @@ export function FormsList({ forms }: FormsListProps) {
         </div>
       </div>
       
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Form Name</TableHead>
-              <TableHead>Last Updated</TableHead>
-              <TableHead>Responses</TableHead>
-              <TableHead>Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paginatedForms.length > 0 ? (
-              paginatedForms.map((form) => (
-                <TableRow key={form.id}>
-                  <TableCell>{form.title}</TableCell>
-                  <TableCell>
-                    {form.updatedAt
-                      ? new Date(form.updatedAt).toLocaleDateString()
-                      : "No date"}
-                  </TableCell>
-                  <TableCell>{form.responses}</TableCell>
-                  <TableCell>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="text-primary hover:text-primary hover:bg-primary/10"
-                      asChild
-                    >
-                      <Link href={`/forms/${form.id}`} className="w-full justify-between">
-                        View Form
-                        <ArrowRight size={16} />
-                      </Link>
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={4} className="h-24 text-center">
-                  {searchQuery ? "No matching forms found" : "No forms yet"}
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+      {paginatedForms.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {paginatedForms.map((form) => (
+            <FormCardItem key={form.id} form={form} />
+          ))}
+        </div>
+      ) : (
+        <div className="text-center p-8 border rounded-md bg-white">
+          <p className="text-gray-500">
+            {searchQuery ? "No matching forms found" : "No forms yet"}
+          </p>
+        </div>
+      )}
       
       {totalPages > 1 && (
         <div className="flex items-center justify-end space-x-2">

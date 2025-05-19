@@ -54,7 +54,7 @@ export default function Signup() {
   return (
     <div className="flex min-h-screen">
       {/* Left sidebar */}
-      <div className="hidden md:flex md:w-1/2 bg-sidebar flex-col items-center justify-center p-12">
+      <div className="hidden text-white md:flex md:w-1/2 bg-sidebar flex-col items-center justify-center p-12">
         <Logo size="large" />
       </div>
       

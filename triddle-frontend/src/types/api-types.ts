@@ -8,31 +8,71 @@ export interface User {
   createdAt: Date;
 }
 
-// Form type
-export interface Form {
-  _id: string;
-  title: string;
-  description: string;
-  fields: FormField[];
-  logicJumps: LogicJump[];
-  settings: FormSettings;
-  status: "draft" | "published" | "archived";
-  slug: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
+// // Form type
+// export interface Form {
+//   id: string;
+//   title: string;
+//   description: string;
+//   fields: FormField[];
+//   logicJumps: LogicJump[];
+//   settings: FormSettings;
+//   status: "draft" | "published" | "archived";
+//   slug: string;
+//   createdAt: Date;
+//   updatedAt: Date;
+//   responses: number;
+//   todayResponses: number;
+//   lastUpdated: Date;
+// }
+
+// // Form Field type
+// export interface FormField {
+//   fieldId: string;
+//   type: string;
+//   label: string;
+//   placeholder: string;
+//   required: boolean;
+//   options?: string[];
+//   validations?: Record<string, any>;
+//   fileSettings?: Record<string, any>;
+//   order: number;
+// }
+
+// // Logic Jump type
+// export interface LogicJump {
+//   fieldId: string;
+//   condition: string;
+//   value: string | number | boolean;
+//   destination: string;
+// }
+
+// // Form Settings type
+// export interface FormSettings {
+//   backgroundColor?: string;
+//   fontFamily?: string;
+//   showLabels?: boolean;
+//   submitButtonText?: string;
+//   successMessage?: string;
+//   redirectUrl?: string;
+// }
 
 // Form Field type
 export interface FormField {
   fieldId: string;
   type: string;
   label: string;
-  placeholder: string;
+  placeholder?: string;
   required: boolean;
-  options?: string[];
+  options?: FieldOption[];
   validations?: Record<string, any>;
   fileSettings?: Record<string, any>;
   order: number;
+}
+
+// Field Option type
+export interface FieldOption {
+  label: string;
+  value: string;
 }
 
 // Logic Jump type
@@ -45,21 +85,49 @@ export interface LogicJump {
 
 // Form Settings type
 export interface FormSettings {
-  backgroundColor?: string;
-  fontFamily?: string;
-  showLabels?: boolean;
-  submitButtonText?: string;
-  successMessage?: string;
-  redirectUrl?: string;
+  theme: {
+    primaryColor: string;
+    backgroundColor: string;
+    fontFamily: string;
+  };
+  progressBar: {
+    show: boolean;
+    type: string;
+  };
+  submitButton: {
+    text: string;
+  };
+  successMessage: string;
+}
+
+// Form type
+export interface Form {
+  id?: string;
+  title: string;
+  description: string;
+  fields: FormField[];
+  logicJumps?: LogicJump[];
+  settings: FormSettings;
+  status?: string;
+  slug?: string;
+  userId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  lastUpdated?: string | null;
+  responses?: number;
+  responsesToday?: number;
+  public_url?: string;
 }
 
 // Response type
 export interface Response {
-  _id: string;
-  form: string;
+  id: string;
+  formId: string;
   answers: Answer[];
   metadata: ResponseMetadata;
+  responseId?: string;
   createdAt: Date;
+  updatedAt?: Date;
 }
 
 // Answer type
@@ -70,12 +138,13 @@ export interface Answer {
 
 // Response Metadata type
 export interface ResponseMetadata {
-  browser?: string;
-  os?: string;
-  device?: string;
-  ip?: string;
+  visitId?: string;
+  ipAddress?: string;
+  startedAt?: Date;
+  timeSpent?: number;
   userAgent?: string;
-  referrer?: string;
+  isComplete?: boolean;
+  completedAt?: Date;
 }
 
 // Auth types

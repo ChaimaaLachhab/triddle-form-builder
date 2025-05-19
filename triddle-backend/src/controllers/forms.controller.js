@@ -64,43 +64,15 @@ exports.getForms = asyncHandler(async (req, res, next) => {
   const responsesTodayMap = Object.fromEntries(
     responsesTodayCounts.map(rc => [rc.formId, rc._count])
   );
+  const protocol = req.secure ? 'https' : 'http';
 
-  // Get lastUpdated for each form (latest response)
-  const lastResponses = await prisma.response.findMany({
-    where: { formId: { in: formIds } },
-    orderBy: [{ createdAt: 'desc' }],
-    select: { formId: true, createdAt: true }
-  });
-
-  // Helper to format "x days ago"
-  function timeAgo(date) {
-    if (!date) return null;
-    const now = new Date();
-    const diffMs = now - new Date(date);
-    const diffSec = Math.floor(diffMs / 1000);
-    if (diffSec < 60) return 'just now';
-    const diffMin = Math.floor(diffSec / 60);
-    if (diffMin < 60) return `${diffMin} minute${diffMin > 1 ? 's' : ''} ago`;
-    const diffHr = Math.floor(diffMin / 60);
-    if (diffHr < 24) return `${diffHr} hour${diffHr > 1 ? 's' : ''} ago`;
-    const diffDay = Math.floor(diffHr / 24);
-    return `${diffDay} day${diffDay > 1 ? 's' : ''} ago`;
-  }
-
-  // Map lastUpdated for each form
-  const lastUpdatedMap = {};
-  for (const resp of lastResponses) {
-    if (!lastUpdatedMap[resp.formId]) {
-      lastUpdatedMap[resp.formId] = timeAgo(resp.createdAt);
-    }
-  }
 
   res.status(200).json({
     success: true,
     count: forms.length,
     data: forms.map(form => ({
     ...form,
-    lastUpdated: lastUpdatedMap[form.id] || null,
+    public_url: `${protocol}://localhost:3000/f/${form.slug}/${form.id}`,	
     responses: responsesMap[form.id] || 0,
     responsesToday: responsesTodayMap[form.id] || 0
   }))
@@ -123,9 +95,13 @@ exports.getForm = asyncHandler(async (req, res, next) => {
     );
   }
 
+  // Check if this is a public access request
+  const isPublicAccess = !req.user;
+  
   // Make sure user is form owner or form is published
-  // Skip this check if viewing form via public URL
+  // Skip this check if viewing form via public URL or if form is published
   if (req.baseUrl.includes('/api/v1/forms') && 
+      !isPublicAccess && // Only check authorization for authenticated requests
       form.userId !== req.user.id && 
       req.user.role !== 'ADMIN' && 
       form.status !== 'PUBLISHED') {
@@ -137,9 +113,26 @@ exports.getForm = asyncHandler(async (req, res, next) => {
     );
   }
 
+  // For public access, only allow access to published forms
+  if (isPublicAccess && form.status !== 'PUBLISHED') {
+    return next(
+      new ErrorResponse(
+        `This form is not currently available to the public`,
+        403
+      )
+    );
+  }
+
+  const protocol = req.secure ? 'https' : 'http';
+  const host = req.get('host');
+  const publicUrl = `${protocol}://localhost:3000/f/${form.slug}/${form.id}`;
+
   res.status(200).json({
     success: true,
-    data: form
+    data: {
+      ...form,
+      public_url: publicUrl
+    }
   });
 });
 
@@ -184,13 +177,12 @@ exports.createForm = asyncHandler(async (req, res, next) => {
   // Construct the public URL for the form
   const protocol = req.secure ? 'https' : 'http';
   const host = req.get('host');
-  const publicUrl = `${protocol}://${host}/form/${form.slug}`;
+  const publicUrl = `${protocol}://localhost:3000/f/${form.slug}/${form.id}`;
 
   res.status(201).json({
     success: true,
     data: {
       ...form,
-      form_id: form.id,
       public_url: publicUrl
     }
   });
@@ -228,9 +220,16 @@ exports.updateForm = asyncHandler(async (req, res, next) => {
     data: req.body
   });
 
+  const protocol = req.secure ? 'https' : 'http';
+  const host = req.get('host');
+  const publicUrl = `${protocol}://localhost:3000/f/${form.slug}/${form.id}`;
+
   res.status(200).json({
     success: true,
-    data: form
+    data: {
+      ...form,
+      public_url: publicUrl
+    }
   });
 });
 

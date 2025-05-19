@@ -9,7 +9,7 @@ export default function Footer() {
                     <div>
                         <Logo size="small" />
                         <p className="mt-4 text-sm text-gray-600">
-                            Create beautiful forms in minutes with our easy-to-use form builder.
+                            Create beautiful forms in minutes with our easy-to-use Triddle.
                         </p>
                     </div>
                     
@@ -78,7 +78,7 @@ export default function Footer() {
                 </div>
                 
                 <div className="mt-12 border-t border-gray-200 pt-6 flex flex-col md:flex-row justify-between items-center">
-                    <p className="text-sm text-gray-600">© Form Builder, 2025. All Rights Reserved.</p>
+                    <p className="text-sm text-gray-600">© Triddle, 2025. All Rights Reserved.</p>
                     <div className="flex space-x-6 mt-4 md:mt-0">
                         <Link href="/terms" className="text-sm text-gray-600 hover:text-primary transition-colors">
                             Terms

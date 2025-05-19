@@ -1,8 +1,18 @@
-import React, { useState } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { FileText, BarChart2, BookOpen, HelpCircle, FileIcon, User, LogOut, ChevronDown } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import React, { useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import {
+  FileText,
+  BarChart2,
+  BookOpen,
+  HelpCircle,
+  FileIcon,
+  User,
+  LogOut,
+  ChevronDown,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
 
 interface SidebarLayoutProps {
   children: React.ReactNode;
@@ -10,13 +20,14 @@ interface SidebarLayoutProps {
 
 export default function SidebarLayout({ children }: SidebarLayoutProps) {
   const pathname = usePathname();
+  const { logout } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const navigationItems = [
-    { name: 'My Forms', path: '/dashboard', icon: FileText },
-    { name: 'Analytics', path: '/analytics', icon: BarChart2 },
-    { name: 'Knowledge Base', path: '/knowledge-base', icon: BookOpen },
-    { name: 'Help & Support', path: '/help-support', icon: HelpCircle },
+    { name: "My Forms", path: "/dashboard", icon: FileText },
+    { name: "Analytics", path: "/analytics", icon: BarChart2 },
+    { name: "Knowledge Base", path: "/knowledge-base", icon: BookOpen },
+    { name: "Help & Support", path: "/help-support", icon: HelpCircle },
   ];
 
   const toggleDropdown = () => setIsDropdownOpen((prev) => !prev);
@@ -26,22 +37,22 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
       {/* Fixed Sidebar - 20% width */}
       <aside className="hidden md:flex flex-col fixed h-screen w-1/5 bg-sidebar text-white">
         <div className="p-4 flex items-center">
-          <FileIcon className="h-8 w-8 mr-2 text-primary" />
+          <FileText className="h-8 w-8 mr-2 text-primary" />
           <h1 className="text-xl font-bold text-white">Form Builder</h1>
         </div>
-        <nav className="flex-1 overflow-y-auto">
+        <nav className="flex-1 overflow-y-auto p-4">
           <ul className="space-y-1">
             {navigationItems.map((item) => {
               const isActive =
                 pathname === item.path ||
-                (item.path === '/dashboard' && pathname!.includes('/form/'));
+                (item.path === "/dashboard" && pathname!.includes("/form/"));
 
               return (
                 <li key={item.name}>
                   <Link
                     href={item.path}
                     className={cn(
-                      "flex items-center px-6 py-3 text-[15px] hover:bg-accent rounded",
+                      "flex w-full items-center px-6 py-3 text-[15px] hover:bg-accent rounded",
                       isActive && "bg-accent"
                     )}
                   >
@@ -54,16 +65,26 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
           </ul>
         </nav>
         <div className="p-4 mt-auto">
-          <Link
-            href="/profile"
-            className="flex w-full items-center px-6 py-3 text-[15px] hover:bg-sidebar-accent rounded"
-          >
-            <User className="mr-3 h-5 w-5" />
-            My Profile
-          </Link>
+          {(() => {
+            const isActive = pathname === "/profile";
+            return (
+              <>
+                <Link
+                  href="/profile"
+                  className={cn(
+                    "flex w-full items-center px-6 py-3 text-[15px] hover:bg-accent rounded",
+                    isActive && "bg-accent"
+                  )}
+                >
+                  <User className="mr-3 h-5 w-5" />
+                  My Profile
+                </Link>
+              </>
+            );
+          })()}
           <button
-            onClick={() => console.log('Logout clicked')}
-            className="flex w-full items-center px-6 py-3 text-[15px] hover:bg-sidebar-accent rounded mt-2"
+            onClick={logout}
+            className="flex w-full items-center px-6 py-3 text-[15px] hover:bg-accent rounded"
           >
             <LogOut className="mr-3 h-5 w-5" />
             Logout
@@ -117,7 +138,7 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
                       </Link>
                       <button
                         onClick={() => {
-                          console.log('Logout clicked');
+                          logout();
                           setIsDropdownOpen(false);
                         }}
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
@@ -134,10 +155,8 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
       </div>
 
       {/* Main content - 80% width with offset for sidebar */}
-      <main className="p-4 md:ml-1/5 md:w-4/5 lg:w-4/5 w-full">
-        <div className="md:ml-1/5 w-full">
-          {children}
-        </div>
+      <main className="p-4 mb-12 md:mb-1 md:ms-auto md:w-4/5 lg:w-4/5 w-full">
+        {children}
       </main>
     </div>
   );
