@@ -38,9 +38,13 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: `http://localhost:${config.port}/api/v1`,
+        url: 'http://localhost:5000/api/v1',
         description: 'Development server',
       },
+      {
+        url: 'https://triddle-form-builder-bk.vercel.app/api/v1',
+        description: 'Production server',
+      }
     ],
     components: {
       securitySchemes: {
