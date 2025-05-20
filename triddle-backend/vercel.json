@@ -8,9 +8,9 @@
       "config": {
         "maxLambdaSize": "50mb",
         "includeFiles": [
-          "prisma/schema.prisma",  // Required for `prisma generate`
-          "node_modules/.prisma/**",  // Prisma Client
-          "node_modules/@prisma/client/**"  // Prisma Types
+          "prisma/schema.prisma",
+          "node_modules/.prisma/**",
+          "node_modules/@prisma/client/**" 
         ]
       }
     }
