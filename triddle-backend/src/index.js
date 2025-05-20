@@ -1,12 +1,10 @@
 const path = require('path');
 const express = require('express');
 const dotenv = require('dotenv');
-const morgan = require('morgan');
 const cors = require('cors');
 const fileupload = require('express-fileupload');
 const cookieParser = require('cookie-parser');
 const helmet = require('helmet');
-const xss = require('xss-clean');
 const rateLimit = require('express-rate-limit');
 const hpp = require('hpp');
 const swaggerJsDoc = require('swagger-jsdoc');
@@ -15,7 +13,6 @@ const swaggerUi = require('swagger-ui-express');
 const { connectDB } = require('./config/db');
 const config = require('./config');
 const errorHandler = require('./middleware/error');
-const logger = require('./config/logger');
 
 // Load environment variables
 dotenv.config();
@@ -76,11 +73,6 @@ app.use(express.json());
 // Cookie parser
 app.use(cookieParser());
 
-// Development logging middleware
-if (config.nodeEnv === 'development') {
-  app.use(morgan('dev'));
-}
-
 // File uploading
 app.use(
   fileupload({
@@ -90,9 +82,6 @@ app.use(
 
 // Set security headers
 app.use(helmet());
-
-// Prevent XSS attacks
-app.use(xss());
 
 // Rate limiting
 const limiter = rateLimit({
@@ -130,22 +119,20 @@ app.use(errorHandler);
 const PORT = config.port;
 
 const server = app.listen(PORT, () => {
-  logger.info(
-    `Server running in ${config.nodeEnv} mode on port ${PORT}`
-  );
+  console.error(`Server running in ${config.nodeEnv} mode on port ${PORT}`);
 });
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err, promise) => {
-  logger.error(`Error: ${err.message}`);
+  console.error(`Error: ${err.message}`);
   // Close server & exit process
   server.close(() => process.exit(1));
 });
 
 // Handle graceful shutdown
 process.on('SIGTERM', () => {
-  logger.info('SIGTERM received, shutting down gracefully');
+  console.log('SIGTERM received, shutting down gracefully');
   server.close(() => {
-    logger.info('Process terminated');
+    console.log('Process terminated');
   });
 });

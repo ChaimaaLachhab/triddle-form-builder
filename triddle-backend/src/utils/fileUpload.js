@@ -3,7 +3,6 @@ const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
 const path = require('path');
 const config = require('../config');
-const logger = require('../config/logger');
 
 /**
  * Upload a file to Cloudinary
@@ -46,7 +45,7 @@ const uploadToCloudinary = async (file, folder = 'uploads', options = {}) => {
     
     return result;
   } catch (error) {
-    logger.error(`Cloudinary upload error: ${error.message}`);
+    console.error(`Cloudinary upload error: ${error.message}`);
     throw new Error(`Failed to upload file: ${error.message}`);
   }
 };
@@ -61,7 +60,7 @@ const deleteFromCloudinary = async (publicId) => {
     const result = await cloudinary.uploader.destroy(publicId);
     return result;
   } catch (error) {
-    logger.error(`Cloudinary delete error: ${error.message}`);
+    console.error(`Cloudinary delete error: ${error.message}`);
     throw new Error(`Failed to delete file: ${error.message}`);
   }
 };
