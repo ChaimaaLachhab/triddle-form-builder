@@ -27,5 +27,5 @@ module.exports = {
   // Allowed origins for CORS
   corsOrigins: process.env.CORS_ORIGINS ? 
     process.env.CORS_ORIGINS.split(',') : 
-    ['http://localhost:3000', 'http://localhost:5173']
+    ['https://triddle-form-builder.vercel.app', 'https://triddle-form-builder-c1zs7ohcp-chaimaalachhabs-projects.vercel.app', 'http://localhost:3000', 'http://localhost:5173']
 };
