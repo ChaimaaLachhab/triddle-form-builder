@@ -3,10 +3,18 @@
 import * as React from "react";
 import Link from "next/link";
 import { ArrowRight, Search, ChevronLeft, ChevronRight } from "lucide-react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/types/api-types";
+import { formatDistanceToNow } from "date-fns";
 
 interface FormsListProps {
   forms: Form[];
@@ -16,22 +24,22 @@ export function FormsList({ forms }: FormsListProps) {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [currentPage, setCurrentPage] = React.useState(1);
   const itemsPerPage = 5;
-  
+
   const filteredForms = React.useMemo(() => {
     if (!searchQuery) return forms;
-    
-    return forms.filter(form => 
+
+    return forms.filter((form) =>
       form.title.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [forms, searchQuery]);
-  
+
   const paginatedForms = React.useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     return filteredForms.slice(startIndex, startIndex + itemsPerPage);
   }, [filteredForms, currentPage]);
-  
+
   const totalPages = Math.ceil(filteredForms.length / itemsPerPage);
-  
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col md:flex-row justify-between md:items-center mb-4">
@@ -53,7 +61,7 @@ export function FormsList({ forms }: FormsListProps) {
           />
         </div>
       </div>
-      
+
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -71,18 +79,24 @@ export function FormsList({ forms }: FormsListProps) {
                   <TableCell>{form.title}</TableCell>
                   <TableCell>
                     {form.updatedAt
-                      ? new Date(form.updatedAt).toLocaleDateString()
-                      : "No date"}
+                      ? formatDistanceToNow(new Date(form.updatedAt), {
+                          addSuffix: true,
+                        })
+                      : "a while ago"}
+                    .
                   </TableCell>
-                  <TableCell>{form.responses}</TableCell>
+                  <TableCell>{form.responses || 0}</TableCell>
                   <TableCell>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       className="text-primary hover:text-primary hover:bg-primary/10"
                       asChild
                     >
-                      <Link href={`/forms/${form.id}`} className="w-full justify-between">
+                      <Link
+                        href={`/forms/${form.id}`}
+                        className="w-full"
+                      >
                         View Form
                         <ArrowRight size={16} />
                       </Link>
@@ -100,13 +114,13 @@ export function FormsList({ forms }: FormsListProps) {
           </TableBody>
         </Table>
       </div>
-      
+
       {totalPages > 1 && (
         <div className="flex items-center justify-end space-x-2">
           <Button
             variant="outline"
             size="icon"
-            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
             disabled={currentPage === 1}
           >
             <ChevronLeft className="h-4 w-4" />
@@ -117,7 +131,9 @@ export function FormsList({ forms }: FormsListProps) {
           <Button
             variant="outline"
             size="icon"
-            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            onClick={() =>
+              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+            }
             disabled={currentPage === totalPages}
           >
             <ChevronRight className="h-4 w-4" />

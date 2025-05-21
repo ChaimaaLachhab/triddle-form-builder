@@ -18,6 +18,8 @@ export default function PublicFormPage() {
   const [submitting, setSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [hasTriedToSubmit, setHasTriedToSubmit] = useState(false);
+  const [pendingAnswers, setPendingAnswers] = useState<Answer[] | null>(null);
   
   // Fetch form data using slug/id
   const { data: form, isLoading, error } = useQuery({
@@ -25,8 +27,15 @@ export default function PublicFormPage() {
     queryFn: () => id ? formService.getFormById(id) : Promise.resolve(null),
   });
 
+  // Get primary color from form settings for consistent styling
+  const primaryColor = form?.settings?.theme?.primaryColor || "#4F46E5";
+
   const handleSubmit = async (answers: Answer[]) => {
     if (!form || !form.id) return;
+    
+    // Set pending answers to be used after authentication if needed
+    setPendingAnswers(answers);
+    setHasTriedToSubmit(true);
     
     setSubmitting(true);
     try {
@@ -40,8 +49,8 @@ export default function PublicFormPage() {
     } catch (error: any) {
       console.error('Error submitting form:', error);
       
-      // Check if the error is due to authentication
-      if (error && error.isAuthError) {
+      // Check if the error is due to authentication and only show modal if user has actually clicked submit
+      if (error && error.isAuthError && hasTriedToSubmit) {
         // Show authentication modal
         setShowAuthModal(true);
         toast.error('Authentication required to submit this form');
@@ -55,6 +64,28 @@ export default function PublicFormPage() {
 
   const handleCloseAuthModal = () => {
     setShowAuthModal(false);
+  };
+
+  // Function to handle successful authentication and retry form submission
+  const handleAuthSuccess = async () => {
+    if (pendingAnswers && form && form.id) {
+      setSubmitting(true);
+      try {
+        await responseService.submitFormResponse(form.id, {
+          formId: form.id,
+          answers: pendingAnswers,
+        });
+        
+        setShowSuccess(true);
+        toast.success('Your response has been submitted successfully!');
+      } catch (error) {
+        console.error('Error submitting form after authentication:', error);
+        toast.error('Something went wrong. Please try again.');
+      } finally {
+        setSubmitting(false);
+        setShowAuthModal(false);
+      }
+    }
   };
 
   if (isLoading) {
@@ -80,7 +111,13 @@ export default function PublicFormPage() {
     return (
       <div className="max-w-2xl mx-auto my-8 p-8 bg-white rounded-lg shadow-sm">
         <div className="text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 text-green-500 mb-4">
+          <div 
+            className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4"
+            style={{ 
+              backgroundColor: `${primaryColor}20`,
+              color: primaryColor 
+            }}
+          >
             <svg 
               xmlns="http://www.w3.org/2000/svg" 
               className="h-8 w-8" 
@@ -120,10 +157,12 @@ export default function PublicFormPage() {
         </div>
       </div>
 
-      {/* Authentication Modal */}
+      {/* Authentication Modal with consistent theming */}
       <AuthModal 
         isOpen={showAuthModal} 
         onClose={handleCloseAuthModal} 
+        onAuthSuccess={handleAuthSuccess}
+        primaryColor={primaryColor}
       />
     </div>
   );

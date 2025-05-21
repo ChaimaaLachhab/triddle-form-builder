@@ -25,17 +25,89 @@ export const authService = {
     if (typeof window === 'undefined') return false;
     return !!localStorage.getItem(TOKEN_STORAGE_KEY);
   },
+  
   getToken: () => {
     if (typeof window === 'undefined') return null;
     return localStorage.getItem(TOKEN_STORAGE_KEY);
   },
+
   handleAuthError: () => {
-    // This will be called when auth errors occur
     if (typeof window !== 'undefined') {
       localStorage.removeItem(TOKEN_STORAGE_KEY);
-      // We don't force redirect here to avoid interrupting the user flow
-      // Instead, we'll show a modal on the component level
       return false;
+    }
+  },
+
+  // Get current user
+  getCurrentUser: async (): Promise<User> => {
+    try {
+      const response = await api.get(AUTH_ENDPOINTS.me);
+      return response.data.data;
+    } catch (error) {
+      const apiError = error as ApiError;
+      if (!apiError.isAuthError) {
+        const message = apiError.message || "Failed to get user information";
+        toast.error(message);
+      }
+      throw apiError;
+    }
+  },
+
+  // Update user details
+  updateUserDetails: async (details: { 
+    name?: string; 
+    email?: string 
+  }): Promise<User> => {
+    try {
+      const response = await api.put(AUTH_ENDPOINTS.updateDetails, details);
+      return response.data.data;
+    } catch (error) {
+      const apiError = error as ApiError;
+      const message = apiError.message || "Failed to update user details";
+      toast.error(message);
+      throw apiError;
+    }
+  },
+
+  // Update password
+  updatePassword: async (passwords: { 
+    currentPassword: string; 
+    newPassword: string 
+  }): Promise<void> => {
+    try {
+      await api.put(AUTH_ENDPOINTS.updatePassword, passwords);
+      toast.success("Password updated successfully");
+    } catch (error) {
+      const apiError = error as ApiError;
+      const message = apiError.message || "Failed to update password";
+      toast.error(message);
+      throw apiError;
+    }
+  },
+
+  // Request password reset
+  forgotPassword: async (email: string): Promise<void> => {
+    try {
+      await api.post(AUTH_ENDPOINTS.forgotPassword, { email });
+      toast.success("Password reset email sent");
+    } catch (error) {
+      const apiError = error as ApiError;
+      const message = apiError.message || "Failed to request password reset";
+      toast.error(message);
+      throw apiError;
+    }
+  },
+
+  // Reset password with token
+  resetPassword: async (token: string, password: string): Promise<void> => {
+    try {
+      await api.put(AUTH_ENDPOINTS.resetPassword(token), { password });
+      toast.success("Password has been reset successfully");
+    } catch (error) {
+      const apiError = error as ApiError;
+      const message = apiError.message || "Failed to reset password";
+      toast.error(message);
+      throw apiError;
     }
   }
 };
@@ -376,27 +448,33 @@ export const analyticsService = {
   },
   
   // Export form responses
-  exportResponses: async (formId: string, format: 'json' | 'csv' = 'json') => {
-    try {
-      const url = `${ANALYTICS_ENDPOINTS.exportResponses(formId)}?format=${format}`;
-      
-      // Handle blob responses differently
-      if (format === 'csv') {
-        const response = await api.get(url, { responseType: 'blob' });
-        return response.data;
-      } else {
-        const response = await api.get(url);
-        return response.data;
-      }
-    } catch (error) {
-      const apiError = error as ApiError;
-      const message = apiError.message || "Failed to export responses";
-      if (!apiError.isAuthError) {
-        toast.error(message);
-      }
-      throw apiError;
+  exportResponses: async (formId: string, options: { format?: 'json' | 'csv', includeIncomplete?: boolean } = {}) => {
+  try {
+    const { format = 'csv', includeIncomplete = true } = options;
+    const url = `${ANALYTICS_ENDPOINTS.exportResponses(formId)}?format=${format}&includeIncomplete=${includeIncomplete}`;
+    
+    // Always request as blob for CSV format
+    if (format === 'csv') {
+      const response = await api.get(url, { 
+        responseType: 'blob',
+        headers: {
+          'Accept': 'text/csv'
+        }
+      });
+      return new Blob([response.data], { type: 'text/csv' });
+    } else {
+      const response = await api.get(url);
+      return response.data;
     }
-  },
+  } catch (error) {
+    const apiError = error as ApiError;
+    const message = apiError.message || "Failed to export responses";
+    if (!apiError.isAuthError) {
+      toast.error(message);
+    }
+    throw apiError;
+  }
+},
 };
 
 // User API functions

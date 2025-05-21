@@ -41,7 +41,7 @@ export function FormDisplay({
   // Generate CSS variables for dynamic styling
   const cssVars = {
     "--primary-color": primaryColor,
-    "--primary-color-light": `${primaryColor}33`, // Adding 33 for 20% opacity
+    "--primary-color-light": `${primaryColor}33`,
   } as React.CSSProperties;
 
   // Sort fields by their order

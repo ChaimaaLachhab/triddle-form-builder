@@ -1,5 +1,6 @@
 "use client";
 import * as React from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { FormBuilder } from "@/components/forms/FormBuilder";
@@ -8,6 +9,9 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 export default function NewFormPage() {
+    const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
+    const [publicUrl, setPublicUrl] = useState("");
+
   const handlePublish = () => {
     toast.success("Form published successfully");
     // Après création, vous pourriez rediriger vers la page d'édition
@@ -39,8 +43,12 @@ export default function NewFormPage() {
             </div>
 
             <div className="flex space-x-2 m-auto">
-              <Button variant="outline" size="sm" onClick={handlePreview}>
-                Preview
+              <Button
+                variant="outline"
+                className="border-primary hover:text-black hover:bg-blue-50"
+                onClick={handlePreview}
+              >
+                Preview Form
               </Button>
               <Button size="sm" onClick={handlePublish}>
                 Publish Form

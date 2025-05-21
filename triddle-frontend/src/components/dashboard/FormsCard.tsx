@@ -29,7 +29,7 @@ function FormCardItem({ form }: FormCardItemProps) {
         <div className="flex items-center mb-2">
           <CircleDot className="w-4 h-4 text-green-500 mr-2" />
           <div className="text-sm">
-            <span className="font-medium">{form.responses} responses</span>
+            <span className="font-medium">{form.responses || 0} responses</span>
             <span className="mx-2 text-gray-400">•</span>
             <span className="text-gray-600">{form.responsesToday} today</span>
           </div>

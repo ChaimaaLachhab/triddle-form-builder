@@ -220,8 +220,8 @@ export function FormBuilder({ initialForm }: FormBuilderProps) {
       toast.success("Form published successfully");
       
       // Navigate to the published form page
-      if (publishedForm.slug) {
-        router.push(`/forms/${publishedForm.slug}`);
+      if (publishedForm.id) {
+        router.push(`/forms/${publishedForm.id}`);
       }
     } catch (error) {
       toast.error("Failed to publish form");

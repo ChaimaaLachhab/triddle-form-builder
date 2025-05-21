@@ -44,6 +44,13 @@ const swaggerOptions = {
       {
         url: 'https://triddle-form-builder-bk.vercel.app/api/v1',
         description: 'Production server',
+      },
+      // Dynamic server based on environment
+      {
+        url: config.nodeEnv === 'production' 
+          ? 'https://triddle-form-builder-bk.vercel.app/api/v1'
+          : 'http://localhost:5000/api/v1',
+        description: 'Current environment server',
       }
     ],
     components: {
@@ -123,7 +130,8 @@ app.use(errorHandler);
 const PORT = config.port;
 
 const server = app.listen(PORT, () => {
-  console.error(`Server running in ${config.nodeEnv} mode on port ${PORT}`);
+  console.log(`Server running in ${config.nodeEnv} mode on port ${PORT}`);
+  console.log(`API Documentation available at http://localhost:${PORT}/api-docs`);
 });
 
 // Handle unhandled promise rejections

@@ -14,9 +14,16 @@ import { toast } from "sonner";
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onAuthSuccess?: () => void;
+  primaryColor?: string;
 }
 
-export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
+export default function AuthModal({ 
+  isOpen, 
+  onClose, 
+  onAuthSuccess,
+  primaryColor = "#4F46E5" 
+}: AuthModalProps) {
   const { login, signup, isLoading } = useAuth();
   
   const [view, setView] = useState<"login" | "signup">("login");
@@ -25,6 +32,13 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const [name, setName] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
+
+  // Generate CSS variables for dynamic styling
+  const cssVars = {
+    "--primary-color": primaryColor,
+    "--primary-color-light": `${primaryColor}33`,
+  } as React.CSSProperties;
 
   const resetForm = () => {
     setEmail("");
@@ -36,6 +50,22 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const toggleView = () => {
     setView(view === "login" ? "signup" : "login");
     resetForm();
+  };
+
+  const handleFocus = (fieldId: string) => {
+    setFocusedField(fieldId);
+  };
+
+  const handleBlur = () => {
+    setFocusedField(null);
+  };
+
+  // Generate field styles based on focus state
+  const getFieldStyles = (fieldId: string) => {
+    return {
+      borderColor: focusedField === fieldId ? primaryColor : "",
+      boxShadow: focusedField === fieldId ? `0 0 0 2px ${primaryColor}33` : "",
+    };
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -61,7 +91,11 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
         
         if (success) {
           toast.success("Login successful!");
-          onClose();
+          if (onAuthSuccess) {
+            onAuthSuccess();
+          } else {
+            onClose();
+          }
         } else {
           toast.error("Invalid email or password.");
         }
@@ -100,9 +134,9 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" style={cssVars}>
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle style={{ color: primaryColor }}>
             {view === "login" ? "Login" : "Create Account"}
           </DialogTitle>
         </DialogHeader>
@@ -118,6 +152,9 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 onChange={(e) => setName(e.target.value)}
                 placeholder="John Doe"
                 disabled={isLoading}
+                onFocus={() => handleFocus('name')}
+                onBlur={handleBlur}
+                style={getFieldStyles('name')}
               />
             </div>
           )}
@@ -131,6 +168,9 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="john@mail.com"
               disabled={isLoading}
+              onFocus={() => handleFocus('email')}
+              onBlur={handleBlur}
+              style={getFieldStyles('email')}
             />
           </div>
           
@@ -138,7 +178,11 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
             <div className="flex items-center justify-between">
               <Label htmlFor="password">Password</Label>
               {view === "login" && (
-                <a href="#" className="text-sm text-primary hover:underline">
+                <a 
+                  href="#" 
+                  className="text-sm hover:underline"
+                  style={{ color: primaryColor }}
+                >
                   Forgot Password?
                 </a>
               )}
@@ -152,6 +196,9 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 placeholder="••••••••••••"
                 className="pr-10"
                 disabled={isLoading}
+                onFocus={() => handleFocus('password')}
+                onBlur={handleBlur}
+                style={getFieldStyles('password')}
               />
               <button
                 type="button"
@@ -171,6 +218,10 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 checked={rememberMe}
                 onCheckedChange={(checked) => setRememberMe(checked === true)}
                 disabled={isLoading}
+                style={{ 
+                  borderColor: rememberMe ? primaryColor : undefined,
+                  background: rememberMe ? primaryColor : undefined 
+                }}
               />
               <Label
                 htmlFor="remember-me"
@@ -182,7 +233,16 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
           )}
           
           <div className="flex flex-col gap-3 pt-2">
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button 
+              type="submit" 
+              className="w-full" 
+              disabled={isLoading}
+              style={{ 
+                backgroundColor: primaryColor,
+                borderColor: primaryColor,
+                color: "#fff"
+              }}
+            >
               {isLoading ? (
                 <span className="flex items-center justify-center gap-2">
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
@@ -197,8 +257,9 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
               <button 
                 type="button" 
                 onClick={toggleView}
-                className="text-primary hover:underline text-sm font-medium"
+                className="text-sm font-medium hover:underline"
                 disabled={isLoading}
+                style={{ color: primaryColor }}
               >
                 {view === "login" ? "Don't have an account? Sign Up" : "Already have an account? Login"}
               </button>
