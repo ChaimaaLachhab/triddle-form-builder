@@ -2,60 +2,65 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form"
+import { useForm } from "react-hook-form";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import Logo from "@/components/layout/Logo";
+import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
-
-// Define the form data type to match the LoginCredentials type
-type FormData = {
-  email: string;
-  password: string;
-  rememberMe?: boolean;
-};
+// Using the provided interface
+import { LoginCredentials } from "@/types/api-types";
 
 export default function Login() {
   const router = useRouter();
-  const { login, isLoading, error: authError } = useAuth();
+  const { login } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<FormData>({
+    reset,
+  } = useForm<LoginCredentials>({
     defaultValues: {
       email: "",
       password: "",
-      rememberMe: false,
     },
   });
 
-  const onSubmit = async (data: FormData) => {
-    // Include rememberMe in the credentials
-    const credentials = {
-      email: data.email,
-      password: data.password,
-      rememberMe: rememberMe,
-    };
+  const onSubmit = async (data: LoginCredentials) => {
+    try {
+      setIsLoading(true);
+      setAuthError(null);
+      
+      const credentials = {
+        ...data,
+        rememberMe,
+      };
 
-    const success = await login(credentials);
-    if (success) {
-      toast.success("Login successful!");
-      router.push("/dashboard");
-    } else {
-      toast.error("Invalid email or password.");
+      const success = await login(credentials);
+      
+      if (success) {
+        toast.success("Login successful!");
+        reset(); // Reset form after successful login
+        router.push("/dashboard");
+      } else {
+        setAuthError("Invalid email or password.");
+        toast.error("Invalid email or password.");
+      }
+    } catch (error) {
+      setAuthError("An unexpected error occurred.");
+      toast.error("An unexpected error occurred.");
+      console.error(error);
+    } finally {
+      setIsLoading(false); // Always reset loading state
     }
-    
-    // if (success) {
-    //   router.push("/dashboard");
-    // }
   };
 
   return (
@@ -83,10 +88,10 @@ export default function Login() {
                 placeholder="john@mail.com"
                 disabled={isLoading}
                 {...register("email", {
-                  required: "L'email est requis",
+                  required: "Email is required",
                   pattern: {
                     value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                    message: "Adresse email invalide",
+                    message: "Invalid email address",
                   },
                 })}
               />
@@ -111,10 +116,10 @@ export default function Login() {
                   className="pr-10"
                   disabled={isLoading}
                   {...register("password", {
-                    required: "Le mot de passe est requis",
+                    required: "Password is required",
                     minLength: {
                       value: 6,
-                      message: "Le mot de passe doit contenir au moins 6 caractères",
+                      message: "Password must be at least 6 characters",
                     },
                   })}
                 />
@@ -134,7 +139,7 @@ export default function Login() {
               <div className="bg-red-50 p-4 rounded-md">
                 <div className="flex">
                   <div className="ml-3">
-                    <h3 className="text-sm font-medium text-red-800">Erreur de connexion</h3>
+                    <h3 className="text-sm font-medium text-red-800">Login Error</h3>
                     <div className="mt-2 text-sm text-red-700">
                       <p>{authError}</p>
                     </div>

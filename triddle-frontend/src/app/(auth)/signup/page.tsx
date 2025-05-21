@@ -10,23 +10,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Logo from "@/components/layout/Logo";
 import { toast } from "sonner";
-
-  type FormData = {
-  name: string;
-  email: string;
-  password: string;
-};
+// Using the provided interface
+import { RegisterData } from "@/types/api-types";
 
 export default function Signup() {
   const router = useRouter();
-  const { signup, isLoading, error: authError } = useAuth();
+  const { signup } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<FormData>({
+    reset,
+  } = useForm<RegisterData>({
     defaultValues: {
       name: "",
       email: "",
@@ -34,20 +32,24 @@ export default function Signup() {
     },
   });
 
-  const onSubmit = async (data: FormData) => {
-    // Include rememberMe in the credentials
-    const credentials = {
-      name: data.name,
-      email: data.email,
-      password: data.password,
-    };
-
-    const success = await signup(credentials);
-    if (success) {
-      toast.success("Account created successfully!");
-      router.push("/login");
-    } else {
-      toast.error("Failed to create account. Please try again.");
+  const onSubmit = async (data: RegisterData) => {
+    try {
+      setIsLoading(true);
+      
+      const success = await signup(data);
+      
+      if (success) {
+        toast.success("Account created successfully!");
+        reset(); // Reset form after successful submission
+        router.push("/login");
+      } else {
+        toast.error("Failed to create account. Please try again.");
+      }
+    } catch (error) {
+      toast.error("An unexpected error occurred.");
+      console.error(error);
+    } finally {
+      setIsLoading(false); // Always reset loading state
     }
   };
 
@@ -76,11 +78,11 @@ export default function Signup() {
                 placeholder="John Doe" 
                 disabled={isLoading}
                 {...register("name", {
-                    required: "Name est requis",
-                    minLength: {
-                      value: 3,
-                      message: "Name must be at least 3 characters long",
-                    },
+                  required: "Name is required",
+                  minLength: {
+                    value: 3,
+                    message: "Name must be at least 3 characters long",
+                  },
                 })}
               />
               {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
@@ -96,10 +98,10 @@ export default function Signup() {
                 placeholder="john@mail.com" 
                 disabled={isLoading}
                 {...register("email", {
-                  required: "L'email est requis",
+                  required: "Email is required",
                   pattern: {
                     value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                    message: "Email invalide",
+                    message: "Invalid email address",
                   },
                 })}
               />
@@ -118,7 +120,7 @@ export default function Signup() {
                   className="pr-10"
                   disabled={isLoading}
                   {...register("password", {
-                    required: "Le mot de passe est requis",
+                    required: "Password is required",
                     minLength: {
                       value: 8,
                       message: "Password must be at least 8 characters long",
@@ -137,7 +139,7 @@ export default function Signup() {
             </div>
             
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "SignUp in..." : "SingUp"}
+              {isLoading ? "Creating account..." : "Sign Up"}
             </Button>
           </form>
           
