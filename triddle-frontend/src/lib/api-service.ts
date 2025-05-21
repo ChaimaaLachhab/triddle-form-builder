@@ -2,7 +2,7 @@
 
 import { toast } from "sonner";
 import axios from "axios";
-import { Form, Response, User } from "@/types/api-types";
+import { Form, Response, User, ExportOptions, FormAnalytics, VisitAnalytics, FieldAnalytics } from "@/types/api-types";
 import { 
   AUTH_ENDPOINTS, 
   FORM_ENDPOINTS, 
@@ -417,7 +417,7 @@ export const responseService = {
 // Analytics API functions
 export const analyticsService = {
   // Get form analytics
-  getFormAnalytics: async (formId: string) => {
+  getFormAnalytics: async (formId: string): Promise<FormAnalytics> => {
     try {
       const response = await api.get(ANALYTICS_ENDPOINTS.formAnalytics(formId));
       return response.data.data;
@@ -432,7 +432,7 @@ export const analyticsService = {
   },
   
   // Get field analytics
-  getFieldAnalytics: async (formId: string) => {
+  getFieldAnalytics: async (formId: string): Promise<FieldAnalytics[]> => {
     try {
       const response = await api.get(ANALYTICS_ENDPOINTS.fieldAnalytics(formId));
       return response.data.data;
@@ -447,7 +447,7 @@ export const analyticsService = {
   },
   
   // Get visit analytics
-  getVisitAnalytics: async (formId: string) => {
+  getVisitAnalytics: async (formId: string): Promise<VisitAnalytics> => {
     try {
       const response = await api.get(ANALYTICS_ENDPOINTS.visitAnalytics(formId));
       return response.data.data;
@@ -462,33 +462,30 @@ export const analyticsService = {
   },
   
   // Export form responses
-  exportResponses: async (formId: string, options: { format?: 'json' | 'csv', includeIncomplete?: boolean } = {}) => {
-  try {
-    const { format = 'csv', includeIncomplete = true } = options;
-    const url = `${ANALYTICS_ENDPOINTS.exportResponses(formId)}?format=${format}&includeIncomplete=${includeIncomplete}`;
-    
-    // Always request as blob for CSV format
-    if (format === 'csv') {
+  exportResponses: async (formId: string, options: ExportOptions = {}): Promise<Blob> => {
+    try {
+      const { format = 'csv', includeIncomplete = true } = options;
+      const url = `${ANALYTICS_ENDPOINTS.exportResponses(formId)}?format=${format}&includeIncomplete=${includeIncomplete}`;
+      
       const response = await api.get(url, { 
         responseType: 'blob',
         headers: {
-          'Accept': 'text/csv'
+          'Accept': format === 'csv' ? 'text/csv' : 'application/json'
         }
       });
-      return new Blob([response.data], { type: 'text/csv' });
-    } else {
-      const response = await api.get(url);
-      return response.data;
+      
+      return new Blob([response.data], { 
+        type: format === 'csv' ? 'text/csv' : 'application/json' 
+      });
+    } catch (error) {
+      const apiError = error as ApiError;
+      const message = apiError.message || "Failed to export responses";
+      if (!apiError.isAuthError) {
+        toast.error(message);
+      }
+      throw apiError;
     }
-  } catch (error) {
-    const apiError = error as ApiError;
-    const message = apiError.message || "Failed to export responses";
-    if (!apiError.isAuthError) {
-      toast.error(message);
-    }
-    throw apiError;
-  }
-},
+  },
 };
 
 // User API functions

@@ -2,13 +2,7 @@
 
 import * as React from "react";
 import { Eye, Send, Users, Clock } from "lucide-react";
-
-interface AnalyticsCardsProps {
-  totalViews: number;
-  totalSubmissions: number;
-  uniqueVisitors: number;
-  avgSessionTime: string;
-}
+import { AnalyticsCardsProps } from "@/types/api-types";
 
 export function AnalyticsCards({
   totalViews,

@@ -35,7 +35,8 @@ export default function FormResponsesPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
   const [publicUrl, setPublicUrl] = useState("");
-
+  const [searchQuery, setSearchQuery] = useState("");
+  
   // Fetch form data
   const { data: form, isLoading: isFormLoading, refetch: refetchForm } = useQuery({
     queryKey: ["form", id],
@@ -43,7 +44,11 @@ export default function FormResponsesPage() {
   });
 
   // Fetch responses data
-  const { data: responses, isLoading: isResponsesLoading } = useQuery({
+  const { 
+    data: responses, 
+    isLoading: isResponsesLoading, 
+    refetch: refetchResponses 
+  } = useQuery({
     queryKey: ["formResponses", id],
     queryFn: () =>
       id ? responseService.getFormResponses(id) : Promise.resolve([]),
@@ -91,7 +96,7 @@ export default function FormResponsesPage() {
         } else {
           toast.success("Form published successfully");
         }
-        refetchForm(); // Refresh form data after publishing
+        refetchForm();
       })
       .catch((error) => {
         console.error("Failed to publish form:", error);
@@ -200,22 +205,31 @@ export default function FormResponsesPage() {
             <div className="space-y-4">
               <div className="relative w-full sm:w-64">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search responses..." className="pl-8" />
+                <Input 
+                  placeholder="Search responses..." 
+                  className="pl-8" 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
               </div>
 
               {isResponsesLoading ? (
-                <div className="flex justify-center items-center h-screen bg-gray-50">
+                <div className="flex justify-center items-center h-64 bg-gray-50">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
                 </div>
               ) : (
-                <ResponsesList responses={responses || []} />
+                <ResponsesList 
+                  responses={responses || []} 
+                  refetchResponses={refetchResponses}
+                  searchQuery={searchQuery}
+                />
               )}
             </div>
           </TabsContent>
 
           <TabsContent value="form">
             {isFormLoading ? (
-              <div className="flex justify-center items-center h-screen bg-gray-50">
+              <div className="flex justify-center items-center h-64 bg-gray-50">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
               </div>
             ) : (

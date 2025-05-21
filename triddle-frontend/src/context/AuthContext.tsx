@@ -194,7 +194,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuthState({ isLoading: true });
     
     if (typeof window === 'undefined') {
-      return false; // Server-side rendering, no authentication
+      return false; 
     }
     
     const token = localStorage.getItem(TOKEN_STORAGE_KEY);

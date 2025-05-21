@@ -8,54 +8,6 @@ export interface User {
   createdAt: Date;
 }
 
-// // Form type
-// export interface Form {
-//   id: string;
-//   title: string;
-//   description: string;
-//   fields: FormField[];
-//   logicJumps: LogicJump[];
-//   settings: FormSettings;
-//   status: "draft" | "published" | "archived";
-//   slug: string;
-//   createdAt: Date;
-//   updatedAt: Date;
-//   responses: number;
-//   todayResponses: number;
-//   lastUpdated: Date;
-// }
-
-// // Form Field type
-// export interface FormField {
-//   fieldId: string;
-//   type: string;
-//   label: string;
-//   placeholder: string;
-//   required: boolean;
-//   options?: string[];
-//   validations?: Record<string, any>;
-//   fileSettings?: Record<string, any>;
-//   order: number;
-// }
-
-// // Logic Jump type
-// export interface LogicJump {
-//   fieldId: string;
-//   condition: string;
-//   value: string | number | boolean;
-//   destination: string;
-// }
-
-// // Form Settings type
-// export interface FormSettings {
-//   backgroundColor?: string;
-//   fontFamily?: string;
-//   showLabels?: boolean;
-//   submitButtonText?: string;
-//   successMessage?: string;
-//   redirectUrl?: string;
-// }
-
 // Form Field type
 export interface FormField {
   fieldId: string;
@@ -174,4 +126,102 @@ export interface AuthResponse {
   token?: string;
   user?: User;
   message?: string;
+}
+
+
+// Analytics Interfaces
+
+// Form Analytics Response
+export interface FormAnalytics {
+  totalVisits: number;
+  totalResponses: number;
+  conversionRate: number;
+  avgCompletionTime: number;
+  devices: {
+    device: string;
+    count: number;
+  }[];
+  dropOffs: any[]; // This could be more specific based on actual data structure
+  dailyTrend: {
+    date: string;
+    count: number;
+  }[];
+}
+
+// Field Analytics Response
+export interface FieldAnalytics {
+  fieldId: string;
+  label: string;
+  type: string;
+  responseCount: number;
+  values: any[];
+  optionCounts?: {
+    [key: string]: number;
+  };
+}
+
+// Visit Analytics Response
+export interface VisitAnalytics {
+  referrers: {
+    referrer: string;
+    count: number;
+  }[];
+  browsers: {
+    browser: string;
+    count: number;
+  }[];
+  operatingSystems: {
+    os: string;
+    count: number;
+  }[];
+  hourlyDistribution: {
+    hour: number;
+    count: number;
+  }[];
+  dayOfWeekDistribution: {
+    dayOfWeek: number;
+    count: number;
+  }[];
+}
+
+// Interface for the export options
+export interface ExportOptions {
+  format?: 'json' | 'csv';
+  includeIncomplete?: boolean;
+}
+
+// Chart data interfaces for component props
+export interface ChartData {
+  date: string;
+  responses: number;
+}
+
+export interface DeviceData {
+  name: string;
+  value: number;
+}
+
+export interface TopForm {
+  id: string;
+  name: string;
+  responses: number;
+}
+
+export interface AnalyticsCardsProps {
+  totalViews: number;
+  totalSubmissions: number;
+  uniqueVisitors: number;
+  avgSessionTime: string;
+}
+
+export interface ResponsesChartProps {
+  data: ChartData[];
+}
+
+export interface DeviceChartProps {
+  data: DeviceData[];
+}
+
+export interface TopFormsTableProps {
+  forms: TopForm[];
 }

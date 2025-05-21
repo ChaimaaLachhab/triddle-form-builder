@@ -3,11 +3,8 @@
 import * as React from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from 'recharts';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
-interface ChartData {
-  date: string;
-  responses: number;
-}
+import { ChartData } from "@/types/api-types";
+import { filterDataByTimeframe, getTimePeriods } from "@/lib/utils";
 
 interface ResponsesChartProps {
   data: ChartData[];
@@ -15,9 +12,12 @@ interface ResponsesChartProps {
 
 export function ResponsesChart({ data }: ResponsesChartProps) {
   const [timeframe, setTimeframe] = React.useState("7days");
+  const periods = getTimePeriods();
   
-  // In a real app, this would filter based on the selected timeframe
-  // For this demo, we'll just use the data as is
+  // Filter data based on selected timeframe
+  const filteredData = React.useMemo(() => {
+    return filterDataByTimeframe(data, timeframe);
+  }, [data, timeframe]);
   
   return (
     <div className="bg-white rounded-lg shadow-sm p-4 border">
@@ -28,24 +28,29 @@ export function ResponsesChart({ data }: ResponsesChartProps) {
             <SelectValue placeholder="Select timeframe" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="7days">Last 7 Days</SelectItem>
-            <SelectItem value="30days">Last 30 Days</SelectItem>
-            <SelectItem value="90days">Last 90 Days</SelectItem>
-            <SelectItem value="year">Last Year</SelectItem>
+            {Object.entries(periods).map(([key, period]) => (
+              <SelectItem key={key} value={key}>{period.label}</SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
       
       <div className="h-64">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} />
-            <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-            <YAxis tick={{ fontSize: 12 }} />
-            <Tooltip />
-            <Bar dataKey="responses" fill="#007AD3" radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
+        {filteredData.length > 0 ? (
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={filteredData} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+              <YAxis tick={{ fontSize: 12 }} />
+              <Tooltip />
+              <Bar dataKey="responses" fill="#007AD3" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="h-full flex items-center justify-center text-gray-500">
+            No data available for the selected timeframe
+          </div>
+        )}
       </div>
     </div>
   );
