@@ -65,8 +65,15 @@ export interface FormField {
   required: boolean;
   options?: FieldOption[];
   validations?: Record<string, any>;
-  fileSettings?: Record<string, any>;
+  fileSettings?: FileSettings;
   order: number;
+}
+
+export interface FileSettings {
+  acceptedTypes?: string;
+  maxSize?: number;
+  allowMultiple?: boolean;
+  showPreview?: boolean;
 }
 
 // Field Option type
@@ -134,6 +141,9 @@ export interface Response {
 export interface Answer {
   fieldId: string;
   value: string | number | boolean | string[];
+  file?: boolean;
+  fileUrl?: string;
+
 }
 
 // Response Metadata type

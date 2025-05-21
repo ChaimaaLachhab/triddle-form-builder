@@ -358,46 +358,60 @@ export const responseService = {
   
   // Submit form response
   submitFormResponse: async (formId: string, responseData: any, files?: File[]): Promise<any> => {
-    try {
-      let response;
+  try {
+    let response;
+    
+    // If there are files to upload, use FormData
+    if (files && files.length > 0) {
+      const formData = new FormData();
       
-      // If there are files to upload, use FormData
-      if (files && files.length > 0) {
-        const formData = new FormData();
-        
-        // Add response data as JSON string
-        formData.append('answers', JSON.stringify(responseData.answers));
-        if (responseData.visitId) formData.append('visitId', responseData.visitId);
-        if (responseData.isComplete !== undefined) formData.append('isComplete', String(responseData.isComplete));
-        
-        // Add files
-        files.forEach((file) => {
-          formData.append(`file`, file);
-        });
-        
-        response = await axios.post(RESPONSE_ENDPOINTS.formResponses(formId), formData, {
-          headers: {
-            // Don't set Content-Type as axios will set it automatically with boundary
-            ...(authService.isAuthenticated() ? { 
-              Authorization: `Bearer ${authService.getToken()}` 
-            } : {})
-          }
-        });
-      } else {
-        // If no files, use JSON
-        response = await api.post(RESPONSE_ENDPOINTS.formResponses(formId), responseData);
-      }
+      // Create a copy of answers that doesn't include the "file" flag
+      const cleanAnswers = responseData.answers.map((answer: any) => {
+        const { file, ...rest } = answer;
+        return rest;
+      });
       
-      return response.data.data;
-    } catch (error) {
-      const apiError = error as ApiError;
-      if (!apiError.isAuthError) {
-        const message = apiError.message || "Failed to submit form response";
-        toast.error(message);
-      }
-      throw apiError;
+      // Add response data as JSON string
+      formData.append('answers', JSON.stringify(cleanAnswers));
+      
+      if (responseData.visitId) formData.append('visitId', responseData.visitId);
+      if (responseData.isComplete !== undefined) formData.append('isComplete', String(responseData.isComplete));
+      
+      // Add files with field IDs as keys
+      files.forEach((file) => {
+        // Find the corresponding answer to get the fieldId
+        const fileAnswer = responseData.answers.find((a: any) => a.value === file.name && a.file === true);
+        if (fileAnswer) {
+          formData.append(fileAnswer.fieldId, file);
+        } else {
+          // Fallback if we can't match the file to an answer
+          formData.append('files', file);
+        }
+      });
+      
+      response = await axios.post(RESPONSE_ENDPOINTS.formResponses(formId), formData, {
+        headers: {
+          // Don't set Content-Type as axios will set it automatically with boundary
+          ...(authService.isAuthenticated() ? { 
+            Authorization: `Bearer ${authService.getToken()}` 
+          } : {})
+        }
+      });
+    } else {
+      // If no files, use JSON
+      response = await api.post(RESPONSE_ENDPOINTS.formResponses(formId), responseData);
     }
-  },
+    
+    return response.data.data;
+  } catch (error) {
+    const apiError = error as ApiError;
+    if (!apiError.isAuthError) {
+      const message = apiError.message || "Failed to submit form response";
+      toast.error(message);
+    }
+    throw apiError;
+  }
+},
 };
 
 // Analytics API functions

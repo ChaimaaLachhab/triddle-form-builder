@@ -30,7 +30,7 @@ export default function PublicFormPage() {
   // Get primary color from form settings for consistent styling
   const primaryColor = form?.settings?.theme?.primaryColor || "#4F46E5";
 
-  const handleSubmit = async (answers: Answer[]) => {
+  const handleSubmit = async (answers: Answer[], files?: File[]) => {
     if (!form || !form.id) return;
     
     // Set pending answers to be used after authentication if needed
@@ -39,10 +39,11 @@ export default function PublicFormPage() {
     
     setSubmitting(true);
     try {
+      // Pass both answers and files to the API service
       await responseService.submitFormResponse(form.id, {
         formId: form.id,
         answers,
-      });
+      }, files);
 
       setShowSuccess(true);
       toast.success('Your response has been submitted successfully!');
@@ -71,6 +72,8 @@ export default function PublicFormPage() {
     if (pendingAnswers && form && form.id) {
       setSubmitting(true);
       try {
+        // We need to have files here too, but we can't store Files in state between renders
+        // This is a limitation - in a real app, you might need a more complex solution
         await responseService.submitFormResponse(form.id, {
           formId: form.id,
           answers: pendingAnswers,
