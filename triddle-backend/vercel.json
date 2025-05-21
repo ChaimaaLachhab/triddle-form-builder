@@ -17,6 +17,30 @@
   ],
   "routes": [
     {
+      "src": "/api-docs/(.*\\.css)",
+      "dest": "src/index.js",
+      "headers": { "Content-Type": "text/css" }
+    },
+    {
+      "src": "/api-docs/(.*\\.js)",
+      "dest": "src/index.js",
+      "headers": { "Content-Type": "application/javascript" }
+    },
+    {
+      "src": "/api-docs/(.*\\.png)",
+      "dest": "src/index.js",
+      "headers": { "Content-Type": "image/png" }
+    },
+    {
+      "src": "/api-docs/(.*\\.woff2)",
+      "dest": "src/index.js",
+      "headers": { "Content-Type": "font/woff2" }
+    },
+    {
+      "src": "/api-docs/(.*)",
+      "dest": "src/index.js"
+    },
+    {
       "src": "/api/(.*)",
       "dest": "src/index.js",
       "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
