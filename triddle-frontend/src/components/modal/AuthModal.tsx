@@ -24,7 +24,7 @@ export default function AuthModal({
   onAuthSuccess,
   primaryColor = "#4F46E5" 
 }: AuthModalProps) {
-  const { login, signup, isLoading } = useAuth();
+  const { login, signupWithAutoLogin, isLoading } = useAuth();
   
   const [view, setView] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
@@ -117,7 +117,7 @@ export default function AuthModal({
           password
         };
         
-        success = await signup(credentials);
+        success = await signupWithAutoLogin(credentials);
         
         if (success) {
           toast.success("Account created successfully!");

@@ -1,11 +1,22 @@
-"use client"
+"use client";
 
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
-import { useRouter } from "next/navigation"
-import { toast } from "sonner"
-import axios from "axios"
-import { User, LoginCredentials, RegisterData, AuthResponse } from "@/types/api-types"
-import { AUTH_ENDPOINTS } from "@/lib/api-config"
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  type ReactNode,
+} from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import axios from "axios";
+import {
+  User,
+  LoginCredentials,
+  RegisterData,
+  AuthResponse,
+} from "@/types/api-types";
+import { AUTH_ENDPOINTS } from "@/lib/api-config";
 
 type AuthState = {
   user: User | null;
@@ -14,7 +25,7 @@ type AuthState = {
   isAuthenticated: boolean;
   error: string | null;
   showAuthModal: boolean; // Added for auth modal control
-}
+};
 
 type AuthContextType = {
   user: User | null;
@@ -22,16 +33,17 @@ type AuthContextType = {
   isLoading: boolean;
   isAuthenticated: boolean;
   error: string | null;
-  showAuthModal: boolean; // Added for auth modal control
+  showAuthModal: boolean;
   login: (credentials: LoginCredentials) => Promise<boolean>;
   signup: (data: RegisterData) => Promise<boolean>;
+  signupWithAutoLogin: (data: RegisterData) => Promise<boolean>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<boolean>;
-  openAuthModal: () => void; // New function to open auth modal
-  closeAuthModal: () => void; // New function to close auth modal
-}
+  openAuthModal: () => void;
+  closeAuthModal: () => void;
+};
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const TOKEN_STORAGE_KEY = "triddle_auth_token";
 
@@ -39,7 +51,7 @@ const TOKEN_STORAGE_KEY = "triddle_auth_token";
 const authApi = axios.create({
   headers: {
     "Content-Type": "application/json",
-  }
+  },
 });
 
 // Add response interceptor to handle errors
@@ -47,7 +59,8 @@ authApi.interceptors.response.use(
   (response) => response,
   (error) => {
     // Custom error handling
-    const message = error.response?.data?.message || error.message || "An error occurred";
+    const message =
+      error.response?.data?.message || error.message || "An error occurred";
     return Promise.reject(new Error(message));
   }
 );
@@ -60,59 +73,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isAuthenticated: false,
     error: null,
     showAuthModal: false, // Initialize modal as hidden
-  })
+  });
 
-  const router = useRouter()
+  const router = useRouter();
 
   const setAuthState = (data: Partial<AuthState>) => {
-    setState((prev) => ({ ...prev, ...data }))
-  }
+    setState((prev) => ({ ...prev, ...data }));
+  };
 
   // Function to open auth modal
   const openAuthModal = () => {
     setAuthState({ showAuthModal: true });
-  }
+  };
 
   // Function to close auth modal
   const closeAuthModal = () => {
     setAuthState({ showAuthModal: false });
-  }
+  };
 
   // Check if user is logged in on initial load
   useEffect(() => {
     // Initialize token from localStorage (only on client side)
-    const token = typeof window !== 'undefined' ? localStorage.getItem(TOKEN_STORAGE_KEY) : null
-    setAuthState({ token })
-    
+    const token =
+      typeof window !== "undefined"
+        ? localStorage.getItem(TOKEN_STORAGE_KEY)
+        : null;
+    setAuthState({ token });
+
     async function initializeAuth() {
-      await checkAuth()
+      await checkAuth();
     }
-    initializeAuth()
-  }, [])
+    initializeAuth();
+  }, []);
 
   // Login function
   const login = async (credentials: LoginCredentials): Promise<boolean> => {
-    setAuthState({ isLoading: true, error: null })
-    
+    setAuthState({ isLoading: true, error: null });
+
     try {
       const response = await authApi.post(AUTH_ENDPOINTS.login, credentials);
       const data: AuthResponse = response.data;
-      
+
       if (!data.success) {
         throw new Error(data.message || "Login failed");
       }
-      
+
       if (data.token && data.user) {
         localStorage.setItem(TOKEN_STORAGE_KEY, data.token);
-        
+
         setAuthState({
           user: data.user,
           token: data.token,
           isAuthenticated: true,
           isLoading: false,
-          showAuthModal: false, // Close modal on successful login
+          showAuthModal: false,
         });
-        
+
         toast.success("Successfully logged in");
         return true;
       } else {
@@ -127,38 +143,89 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading: false,
         error: message,
       });
-      
+
       toast.error(message);
       return false;
     }
-  }
+  };
 
   // Register function
   const signup = async (data: RegisterData): Promise<boolean> => {
     setAuthState({ isLoading: true, error: null });
-    
+
     try {
       const response = await authApi.post(AUTH_ENDPOINTS.signup, data);
       const responseData: AuthResponse = response.data;
-      
+
       if (!responseData.success) {
         throw new Error(responseData.message || "Registration failed");
       }
-      
+
       toast.success("Account created successfully");
       router.push("/login");
       return true;
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Registration failed";
+      const message =
+        error instanceof Error ? error.message : "Registration failed";
       setAuthState({
         isLoading: false,
         error: message,
       });
-      
+
       toast.error(message);
       return false;
     }
-  }
+  };
+
+  // Auto-login signup function
+  const signupWithAutoLogin = async (data: RegisterData): Promise<boolean> => {
+    setAuthState({ isLoading: true, error: null });
+
+    try {
+      const response = await authApi.post(AUTH_ENDPOINTS.signup, data);
+      const responseData: AuthResponse = response.data;
+
+      if (!responseData.success) {
+        throw new Error(responseData.message || "Registration failed");
+      }
+
+      // Check if response contains token and user data
+      if (responseData.token && responseData.user) {
+        // Save token to localStorage
+        localStorage.setItem(TOKEN_STORAGE_KEY, responseData.token);
+
+        // Update auth state with user data and token
+        setAuthState({
+          user: responseData.user,
+          token: responseData.token,
+          isAuthenticated: true,
+          isLoading: false,
+          error: null,
+          showAuthModal: false, // Close modal on successful signup
+        });
+
+        toast.success("Account created successfully! You are now logged in");
+        return true;
+      } else {
+        const loginSuccess = await login({
+          email: data.email,
+          password: data.password,
+        });
+
+        return loginSuccess;
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Registration failed";
+      setAuthState({
+        isLoading: false,
+        error: message,
+      });
+
+      toast.error(message);
+      return false;
+    }
+  };
 
   // Logout function
   const logout = async (): Promise<void> => {
@@ -175,7 +242,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       // Clear local storage and state regardless of API success
       localStorage.removeItem(TOKEN_STORAGE_KEY);
-      
+
       setAuthState({
         user: null,
         token: null,
@@ -183,22 +250,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading: false,
         error: null,
       });
-      
+
       router.push("/login");
       toast.success("You have been logged out");
     }
-  }
+  };
 
   // Check auth state
   const checkAuth = async (): Promise<boolean> => {
     setAuthState({ isLoading: true });
-    
-    if (typeof window === 'undefined') {
-      return false; 
+
+    if (typeof window === "undefined") {
+      return false; // Server-side rendering, no authentication
     }
-    
+
     const token = localStorage.getItem(TOKEN_STORAGE_KEY);
-    
+
     if (!token) {
       setAuthState({
         user: null,
@@ -209,16 +276,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       return false;
     }
-    
+
     try {
       const response = await authApi.get(AUTH_ENDPOINTS.me, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
-      
+
       const data = response.data;
-      
+
       if (data.success && data.user) {
         setAuthState({
           user: data.user,
@@ -233,7 +300,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       localStorage.removeItem(TOKEN_STORAGE_KEY);
-      
+
       setAuthState({
         user: null,
         token: null,
@@ -241,34 +308,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading: false,
         error: "Session expired. Please login again.",
       });
-      
+
       return false;
     }
-  }
+  };
 
   const value = {
     ...state,
     login,
     signup,
+    signupWithAutoLogin,
     logout,
     checkAuth,
     openAuthModal,
     closeAuthModal,
-  }
+  };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  )
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext)
-  
+  const context = useContext(AuthContext);
+
   if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider")
+    throw new Error("useAuth must be used within an AuthProvider");
   }
-  
-  return context
+
+  return context;
 }
